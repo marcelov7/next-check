@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
@@ -6,7 +6,7 @@ export async function GET() {
   return NextResponse.json(equipamentos);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
     if (!data.nome || !data.tag || !data.areaId) return NextResponse.json({ error: 'Campos obrigatórios faltando' }, { status: 400 });
