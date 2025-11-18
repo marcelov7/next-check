@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const s: any = session;
   if (!s || !s.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const id = Number(s.user.id);
-  const user = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, username: true, image: true } });
+  const user = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, username: true, image: true, role: true } });
   return NextResponse.json(user);
 }
 
@@ -30,7 +30,7 @@ export async function PUT(req: Request) {
   }
 
   try {
-    const updated = await prisma.user.update({ where: { id }, data, select: { id: true, name: true, email: true, username: true, image: true } });
+  const updated = await prisma.user.update({ where: { id }, data, select: { id: true, name: true, email: true, username: true, image: true, role: true } });
     return NextResponse.json(updated);
   } catch (err: any) {
     console.error(err);

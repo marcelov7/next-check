@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/app/components/ui/sheet";
 import {
@@ -43,6 +44,26 @@ const secondaryNav: NavItem[] = [
 
 function SidebarContent({ onNavigate, isCollapsed }: { onNavigate?: () => void; isCollapsed?: boolean }) {
   const pathname = usePathname();
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/me');
+        if (!mounted) return;
+        if (res.ok) {
+          const data = await res.json();
+          setRole(data?.role ?? null);
+        } else {
+          setRole(null);
+        }
+      } catch (e) {
+        setRole(null);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
   return (
     <div className="flex h-full flex-col p-4">
       {/* Branding */}
@@ -96,7 +117,9 @@ function SidebarContent({ onNavigate, isCollapsed }: { onNavigate?: () => void; 
 
       {/* Secondary navigation */}
       <nav className="space-y-1">
-        {secondaryNav.map((item) => {
+        {secondaryNav
+          .filter((item) => (item.href === '/usuarios' ? role === 'superadmin' : true))
+          .map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
           return (

@@ -10,18 +10,22 @@ export const authOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: "E-mail e senha",
+      name: "E-mail ou username",
       credentials: {
-        email: { label: "E-mail", type: "text" },
+        identifier: { label: "E-mail ou username", type: "text" },
         password: { label: "Senha", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) {
+        if (!credentials?.identifier || !credentials.password) {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+        const ident = credentials.identifier;
+        // Find by email or username
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [{ email: ident }, { username: ident }],
+          },
         });
 
         if (!user) return null;

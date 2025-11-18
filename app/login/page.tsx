@@ -8,7 +8,7 @@ import { Button } from "@/app/components/ui/button";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@checklist.local");
+  const [identifier, setIdentifier] = useState("admin@checklist.local");
   const [password, setPassword] = useState("password");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     const result = await signIn("credentials", {
       redirect: false,
-      email,
+      identifier,
       password,
     });
 
@@ -44,14 +44,14 @@ export default function LoginPage() {
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="block">
-            <span className="text-sm text-muted-foreground">E-mail</span>
+            <span className="text-sm text-muted-foreground">E-mail ou username</span>
             <div className="mt-1" />
             <Input
-              type="email"
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+              type="text"
+              value={identifier}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setIdentifier(e.target.value)}
               required
-              placeholder="seu@email.com"
+              placeholder="seu@email.com ou username"
             />
           </label>
 

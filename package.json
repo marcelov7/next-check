@@ -4,13 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+  "build": "prisma generate && prisma generate --schema prisma/schema.sqlite.prisma && next build",
     "start": "next start",
     "lint": "eslint",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+  "postinstall": "prisma generate && prisma generate --schema prisma/schema.sqlite.prisma",
+  "generate:sqlite": "prisma generate --schema prisma/schema.sqlite.prisma"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",
