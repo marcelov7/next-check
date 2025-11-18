@@ -13,6 +13,8 @@ import {
   History,
   Building2,
   Wrench,
+  Tag,
+  Clipboard,
   User,
   Users,
   ChevronLeft,
@@ -30,6 +32,8 @@ const primaryNav: NavItem[] = [
   { href: "/historico", label: "Histórico", icon: History },
   { href: "/areas", label: "Áreas", icon: Building2 },
   { href: "/equipamentos", label: "Equipamentos", icon: Wrench },
+  { href: "/tipos", label: "Tipos", icon: Tag },
+  { href: "/check-templates", label: "Check Templates", icon: Clipboard },
 ];
 
 const secondaryNav: NavItem[] = [
