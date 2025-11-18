@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { TesteStatus } from "@prisma/client";
-import Sidebar from "@/app/components/Sidebar";
+import PageLayout from "@/app/components/PageLayout";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -67,12 +67,9 @@ export default async function DashboardPage() {
   const paradas = await getLatestParadas();
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <Sidebar />
-      <div className="md:ml-64">
-        <div className="min-h-[100dvh] px-4 py-10 pt-14 md:pt-10">
-          <div className="mx-auto max-w-5xl">
-            <header className="space-y-2">
+    <PageLayout>
+      <div className="mx-auto max-w-5xl">
+        <header className="space-y-2">
               <p className="text-sm uppercase tracking-[0.3em] text-primary">Checklist de Paradas</p>
               <h1 className="text-4xl font-semibold text-foreground">Painel de Controle</h1>
               <p className="text-muted-foreground">
@@ -147,9 +144,7 @@ export default async function DashboardPage() {
         </div>
       </section>
             </div>
-          </div>
-        </div>
-    </main>
+    </PageLayout>
   );
 }
 

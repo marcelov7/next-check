@@ -15,8 +15,12 @@ import {
   Wrench,
   User,
   Users,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
 } from "lucide-react";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import { useSidebar } from "@/app/components/SidebarContext";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
 
@@ -33,23 +37,31 @@ const secondaryNav: NavItem[] = [
   { href: "/usuarios", label: "Gerenciar Usuários", icon: Users },
 ];
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({ onNavigate, isCollapsed }: { onNavigate?: () => void; isCollapsed?: boolean }) {
   const pathname = usePathname();
   return (
     <div className="flex h-full flex-col p-4">
       {/* Branding */}
-      <div className="mb-4 flex items-center justify-between gap-2 px-2">
-        <Link href="/dashboard" className="block text-sm font-semibold text-foreground" onClick={onNavigate}>
-          Sistema de Checklist de Paradas
-        </Link>
-        <ThemeToggle />
-      </div>
+      {!isCollapsed ? (
+        <div className="mb-4 flex items-center justify-between gap-2 px-2">
+          <Link href="/dashboard" className="block text-sm font-semibold text-foreground" onClick={onNavigate}>
+            Sistema de Checklist de Paradas
+          </Link>
+          <ThemeToggle />
+        </div>
+      ) : (
+        <div className="mb-4 flex items-center justify-center px-2">
+          <ThemeToggle />
+        </div>
+      )}
 
       {/* Section title */}
-      <div className="mb-2 flex items-center gap-2 px-2 text-muted-foreground">
-        <span className="text-base">▣</span>
-        <span className="text-sm font-medium">Menu Principal</span>
-      </div>
+      {!isCollapsed && (
+        <div className="mb-2 flex items-center gap-2 px-2 text-muted-foreground">
+          <span className="text-base">▣</span>
+          <span className="text-sm font-medium">Menu Principal</span>
+        </div>
+      )}
 
       {/* Primary navigation */}
       <nav className="space-y-1">
@@ -61,21 +73,22 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               key={item.href}
               href={item.href}
               onClick={onNavigate}
+              title={isCollapsed ? item.label : undefined}
               className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${
                 active
                   ? "bg-primary/15 text-primary ring-1 ring-inset ring-primary/30"
                   : "text-muted-foreground hover:bg-card/80 hover:text-foreground"
-              }`}
+              } ${isCollapsed ? "justify-center" : ""}`}
             >
-              <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
+              <Icon className="h-4 w-4 shrink-0" />
+              {!isCollapsed && <span>{item.label}</span>}
             </Link>
           );
         })}
       </nav>
 
       {/* Divider */}
-  <div className="my-4 w-full border-t border-border" />
+      <div className="my-4 w-full border-t border-border" />
 
       {/* Secondary navigation */}
       <nav className="space-y-1">
@@ -87,14 +100,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               key={item.href}
               href={item.href}
               onClick={onNavigate}
+              title={isCollapsed ? item.label : undefined}
               className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${
                 active
                   ? "bg-primary/15 text-primary ring-1 ring-inset ring-primary/30"
                   : "text-muted-foreground hover:bg-card/80 hover:text-foreground"
-              }`}
+              } ${isCollapsed ? "justify-center" : ""}`}
             >
-              <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
+              <Icon className="h-4 w-4 shrink-0" />
+              {!isCollapsed && <span>{item.label}</span>}
             </Link>
           );
         })}
@@ -103,9 +117,13 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="mt-auto border-t border-border pt-4">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="w-full rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground hover:border-border hover:text-foreground"
+          title={isCollapsed ? "Sair" : undefined}
+          className={`w-full rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground hover:border-border hover:text-foreground flex items-center gap-2 ${
+            isCollapsed ? "justify-center" : ""
+          }`}
         >
-          Sair
+          <LogOut className="h-4 w-4 shrink-0" />
+          {!isCollapsed && <span>Sair</span>}
         </button>
       </div>
     </div>
@@ -114,15 +132,31 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
+  const { isCollapsed, setIsCollapsed } = useSidebar();
 
   return (
     <>
       {/* Desktop sidebar */}
       <aside
-        className="app-sidebar fixed left-0 top-0 hidden h-screen w-64 shrink-0 overflow-y-auto border-r border-border bg-card md:block"
+        className={`app-sidebar fixed left-0 top-0 hidden h-screen shrink-0 overflow-y-auto border-r border-border bg-card md:block transition-all duration-300 ${
+          isCollapsed ? "w-16" : "w-64"
+        }`}
         style={{ backgroundColor: "hsl(var(--card))" }}
       >
-        <SidebarContent />
+        <SidebarContent isCollapsed={isCollapsed} />
+        
+        {/* Toggle button */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute -right-3 top-6 z-50 rounded-full border border-border bg-card p-1 shadow-md hover:bg-card/80"
+          aria-label={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </button>
       </aside>
 
   {/* Mobile top bar */}
