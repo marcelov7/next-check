@@ -119,7 +119,7 @@ export default function Sidebar() {
     <>
       {/* Desktop sidebar */}
       <aside
-        className="app-sidebar sticky top-0 hidden h-[100dvh] w-64 shrink-0 border-r border-border bg-card md:block"
+        className="app-sidebar fixed left-0 top-0 hidden h-screen w-64 shrink-0 overflow-y-auto border-r border-border bg-card md:block"
         style={{ backgroundColor: "hsl(var(--card))" }}
       >
         <SidebarContent />

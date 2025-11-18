@@ -67,17 +67,18 @@ export default async function DashboardPage() {
   const paradas = await getLatestParadas();
 
   return (
-    <main className="min-h-screen bg-background text-foreground px-4 py-10">
-      <div className="mx-auto flex flex-col md:flex-row max-w-7xl gap-6">
-        <Sidebar />
-        <div className="min-h-[100dvh] flex-1 pt-14 md:pt-10">
-      <header className="mx-auto max-w-5xl space-y-2">
-  <p className="text-sm uppercase tracking-[0.3em] text-primary">Checklist de Paradas</p>
-        <h1 className="text-4xl font-semibold text-foreground">Painel de Controle</h1>
-        <p className="text-muted-foreground">
-          Controle as áreas, equipamentos e testes em tempo real. Use o login para acessar as funcionalidades completas.
-        </p>
-        <div className="flex flex-wrap gap-3">
+    <main className="min-h-screen bg-background text-foreground">
+      <Sidebar />
+      <div className="md:ml-64">
+        <div className="min-h-[100dvh] px-4 py-10 pt-14 md:pt-10">
+          <div className="mx-auto max-w-5xl">
+            <header className="space-y-2">
+              <p className="text-sm uppercase tracking-[0.3em] text-primary">Checklist de Paradas</p>
+              <h1 className="text-4xl font-semibold text-foreground">Painel de Controle</h1>
+              <p className="text-muted-foreground">
+                Controle as áreas, equipamentos e testes em tempo real. Use o login para acessar as funcionalidades completas.
+              </p>
+              <div className="flex flex-wrap gap-3">
           <Link
             className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-foreground transition hover:bg-primary/80"
             href="/login"
@@ -145,8 +146,9 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
+            </div>
+          </div>
         </div>
-      </div>
     </main>
   );
 }
