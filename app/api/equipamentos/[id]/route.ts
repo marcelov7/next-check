@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest, context: any) {
   const params = await (context?.params ?? {});
   const id = Number(params.id);
-  const equipamento = await prisma.equipamento.findUnique({ where: { id }, include: { area: true } });
+  const equipamento = await prisma.equipamento.findUnique({ where: { id }, include: { area: true, tipo: true } });
   if (!equipamento) return NextResponse.json({ error: 'Equipamento não encontrado' }, { status: 404 });
   return NextResponse.json(equipamento);
 }
@@ -14,7 +14,7 @@ export async function PUT(request: NextRequest, context: any) {
     const params = await (context?.params ?? {});
     const id = Number(params.id);
     const data = await request.json();
-    const equipamento = await prisma.equipamento.update({ where: { id }, data: { nome: data.nome, tag: data.tag, descricao: data.descricao ?? null, ativo: data.ativo ?? true, areaId: Number(data.areaId) } });
+    const equipamento = await prisma.equipamento.update({ where: { id }, data: { nome: data.nome, tag: data.tag, descricao: data.descricao ?? null, ativo: data.ativo ?? true, areaId: Number(data.areaId), tipoId: data.tipoId ? Number(data.tipoId) : null } });
     return NextResponse.json(equipamento);
   } catch (error) {
     console.error(error);

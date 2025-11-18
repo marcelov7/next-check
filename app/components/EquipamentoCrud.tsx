@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 
 type Area = { id: number; nome: string };
-type Equip = { id: number; nome: string; tag: string; descricao?: string | null; ativo: boolean; area: Area };
+type Tipo = { id: number; nome: string };
+type Equip = { id: number; nome: string; tag: string; descricao?: string | null; ativo: boolean; area: Area; tipo?: Tipo | null };
 
 export default function EquipamentoCrud() {
   const [equipamentos, setEquipamentos] = useState<Equip[]>([]);
@@ -12,7 +13,9 @@ export default function EquipamentoCrud() {
   const [tag, setTag] = useState("");
   const [descricao, setDescricao] = useState("");
   const [areaId, setAreaId] = useState<string | number>('');
+  const [tipoId, setTipoId] = useState<string | number>('');
   const [loading, setLoading] = useState(false);
+  const [tipos, setTipos] = useState<Tipo[]>([]);
 
   const fetchAreas = async () => {
     const res = await fetch('/api/areas');
@@ -20,19 +23,25 @@ export default function EquipamentoCrud() {
     setAreas(data);
     if (!areaId && data.length) setAreaId(data[0].id);
   };
+  const fetchTipos = async () => {
+    const res = await fetch('/api/tipos');
+    const data = await res.json();
+    setTipos(data);
+    if (!tipoId && data.length) setTipoId(data[0].id);
+  };
   const fetchEquip = async () => {
     const res = await fetch('/api/equipamentos');
     const data = await res.json();
     setEquipamentos(data);
   };
 
-  useEffect(() => { fetchAreas(); fetchEquip(); }, []);
+  useEffect(() => { fetchAreas(); fetchTipos(); fetchEquip(); }, []);
 
   const createEquip = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!areaId) return alert('Selecione uma área');
     setLoading(true);
-    const res = await fetch('/api/equipamentos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, tag, descricao, areaId }) });
+    const res = await fetch('/api/equipamentos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, tag, descricao, areaId, tipoId: tipoId || null }) });
     if (res.ok) { setNome(''); setTag(''); setDescricao(''); await fetchEquip(); } else { alert('Erro ao criar equipamento'); }
     setLoading(false);
   };
@@ -48,7 +57,8 @@ export default function EquipamentoCrud() {
     const newTag = prompt('Tag', equip.tag) ?? equip.tag;
     const newDesc = prompt('Descrição', equip.descricao ?? '') ?? equip.descricao ?? '';
     const newAreaId = prompt('Area ID', String(equip.area.id)) ?? String(equip.area.id);
-    const res = await fetch(`/api/equipamentos/${equip.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: newName, tag: newTag, descricao: newDesc, areaId: Number(newAreaId) }) });
+    const newTipoId = prompt('Tipo ID (vazio para nenhum)', String(equip.tipo?.id ?? '')) ?? String(equip.tipo?.id ?? '');
+    const res = await fetch(`/api/equipamentos/${equip.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: newName, tag: newTag, descricao: newDesc, areaId: Number(newAreaId), tipoId: newTipoId ? Number(newTipoId) : null }) });
     if (res.ok) fetchEquip(); else alert('Erro ao atualizar');
   };
 
@@ -59,6 +69,10 @@ export default function EquipamentoCrud() {
         <input required value={nome} onChange={(e)=>setNome(e.target.value)} placeholder="Nome" className="col-span-1 md:col-span-1 rounded-md border px-3 py-2" />
         <input required value={tag} onChange={(e)=>setTag(e.target.value)} placeholder="Tag" className="col-span-1 md:col-span-1 rounded-md border px-3 py-2" />
         <input value={descricao} onChange={(e)=>setDescricao(e.target.value)} placeholder="Descrição" className="col-span-1 md:col-span-1 rounded-md border px-3 py-2" />
+        <select value={String(tipoId)} onChange={(e)=>setTipoId(Number(e.target.value))} className="col-span-1 md:col-span-1 rounded-md border px-3 py-2">
+          <option value="">Tipo (opcional)</option>
+          {tipos.map(t=> <option key={t.id} value={t.id}>{t.nome}</option>)}
+        </select>
         <select value={String(areaId)} onChange={(e)=>setAreaId(Number(e.target.value))} className="col-span-1 md:col-span-1 rounded-md border px-3 py-2">
           <option value="">Selecione a área</option>
           {areas.map(a=> <option key={a.id} value={a.id}>{a.nome}</option>)}

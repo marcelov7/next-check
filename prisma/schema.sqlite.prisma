@@ -45,9 +45,34 @@ model Equipamento {
   ativo       Boolean    @default(true)
   area        Area       @relation(fields: [areaId], references: [id])
   areaId      Int
+  tipo        TipoEquipamento? @relation(fields: [tipoId], references: [id])
+  tipoId      Int?
   testes      Teste[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+}
+
+model TipoEquipamento {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique
+  descricao String?
+  ativo     Boolean  @default(true)
+  equipamentos Equipamento[]
+  checkTemplates CheckTemplate[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CheckTemplate {
+  id          Int      @id @default(autoincrement())
+  tipo        TipoEquipamento @relation(fields: [tipoId], references: [id])
+  tipoId      Int
+  nome        String
+  descricao   String?
+  ordem       Int?
+  obrigatorio Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Parada {
