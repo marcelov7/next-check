@@ -1,8 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
-  const equipamentos = await prisma.equipamento.findMany({ include: { area: true, tipo: true } });
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url);
+  const areaId = url.searchParams.get('areaId');
+  const where: any = {};
+  if (areaId) where.areaId = Number(areaId);
+  const equipamentos = await prisma.equipamento.findMany({ where, include: { area: true, tipo: true } });
   return NextResponse.json(equipamentos);
 }
 

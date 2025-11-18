@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from 'next/navigation';
 
 type Area = { id: number; nome: string };
 type Tipo = { id: number; nome: string };
@@ -12,7 +13,9 @@ export default function EquipamentoCrud() {
   const [nome, setNome] = useState("");
   const [tag, setTag] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [areaId, setAreaId] = useState<string | number>('');
+  const searchParams = useSearchParams();
+  const paramAreaId = searchParams ? (searchParams.get('areaId') ?? '') : '';
+  const [areaId, setAreaId] = useState<string | number>(paramAreaId || '');
   const [tipoId, setTipoId] = useState<string | number>('');
   const [loading, setLoading] = useState(false);
   const [tipos, setTipos] = useState<Tipo[]>([]);
@@ -30,12 +33,13 @@ export default function EquipamentoCrud() {
     if (!tipoId && data.length) setTipoId(data[0].id);
   };
   const fetchEquip = async () => {
-    const res = await fetch('/api/equipamentos');
+    const q = paramAreaId ? `?areaId=${paramAreaId}` : '';
+    const res = await fetch(`/api/equipamentos${q}`);
     const data = await res.json();
     setEquipamentos(data);
   };
 
-  useEffect(() => { fetchAreas(); fetchTipos(); fetchEquip(); }, []);
+  useEffect(() => { fetchAreas(); fetchTipos(); fetchEquip(); }, [paramAreaId]);
 
   const createEquip = async (e: React.FormEvent) => {
     e.preventDefault();
