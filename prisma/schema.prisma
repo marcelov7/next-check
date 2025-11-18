@@ -123,7 +123,7 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   emailVerified DateTime?
-  image String?
+  image String? @db.LongText
   accounts Account[]
   sessions Session[]
 }
