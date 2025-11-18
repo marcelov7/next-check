@@ -1,4 +1,4 @@
-import { PrismaClient, ParadaStatus, ParadaTipo, TesteStatus } from "../app/generated/prisma/client";
+import { PrismaClient, ParadaStatus, ParadaTipo, TesteStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 

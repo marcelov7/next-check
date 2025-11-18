@@ -1,0 +1,5 @@
+DATABASE_URL="file:/home/marcelo/checklist/next-checklist/prisma/dev.db"
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=change-me-in-prod-use-strong-secret
+  env locaol do next check
+  

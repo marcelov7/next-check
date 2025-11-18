@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { TesteStatus } from "@/app/generated/prisma/client";
+import { TesteStatus } from "@prisma/client";
 import Sidebar from "@/app/components/Sidebar";
 
 export const dynamic = "force-dynamic";
