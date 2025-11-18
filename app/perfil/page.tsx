@@ -1,4 +1,5 @@
 import PageLayout from "@/app/components/PageLayout";
+import ProfileForm from '@/app/components/ProfileForm';
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,6 +13,9 @@ export default function PerfilPage() {
           <h1 className="text-3xl font-semibold">Meu Perfil</h1>
           <p className="text-muted-foreground">Configurações do usuário e preferências.</p>
         </header>
+      </div>
+      <div className="mt-8">
+        <ProfileForm />
       </div>
     </PageLayout>
   );
