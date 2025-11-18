@@ -23,6 +23,7 @@ import {
   LogOut,
 } from "lucide-react";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import UserHeader from "@/app/components/UserHeader";
 import { useSidebar } from "@/app/components/SidebarContext";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
@@ -201,8 +202,15 @@ export default function Sidebar() {
             <SidebarContent onNavigate={() => setOpen(false)} />
           </SheetContent>
         </Sheet>
-        <Link href="/dashboard" className="text-sm font-semibold text-foreground">Checklist</Link>
-        <ThemeToggle />
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="text-sm font-semibold text-foreground">Checklist</Link>
+          <ThemeToggle />
+        </div>
+        {/* mobile user header */}
+        <div className="flex items-center gap-2">
+          {/* lazy-load user header client component */}
+          <UserHeader compact />
+        </div>
       </div>
     </>
   );
