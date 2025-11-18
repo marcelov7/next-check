@@ -13,12 +13,12 @@ export default async function ParadasPage() {
   });
 
   return (
-    <main className="min-h-screen bg-background text-foreground px-4 py-10">
-      <div className="mx-auto flex flex-col md:flex-row max-w-7xl gap-6">
-        <Sidebar />
-        <div className="min-h-[100dvh] flex-1 pt-14 md:pt-10">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <header className="flex flex-col gap-2">
+    <main className="min-h-screen bg-background text-foreground">
+      <Sidebar />
+      <div className="md:ml-64">
+        <div className="min-h-[100dvh] px-4 py-10 pt-14 md:pt-10">
+          <div className="mx-auto max-w-5xl space-y-6">
+            <header className="flex flex-col gap-2">
           <Link href="/" className="text-sm text-primary underline">
             Voltar para o início
           </Link>
