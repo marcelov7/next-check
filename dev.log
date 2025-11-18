@@ -301,3 +301,16 @@ prisma:query SELECT `main`.`Parada`.`id`, `main`.`Parada`.`macro`, `main`.`Parad
 prisma:query SELECT `main`.`Teste`.`id`, `main`.`Teste`.`paradaId`, `main`.`Teste`.`equipamentoId`, `main`.`Teste`.`status`, `main`.`Teste`.`observacoes`, `main`.`Teste`.`problemaDescricao`, `main`.`Teste`.`dataTeste`, `main`.`Teste`.`testadoPor`, `main`.`Teste`.`naoAplica`, `main`.`Teste`.`createdAt`, `main`.`Teste`.`updatedAt` FROM `main`.`Teste` WHERE `main`.`Teste`.`paradaId` IN (?,?,?) LIMIT ? OFFSET ?
  ✓ Compiled in 19ms
  GET /dashboard 200 in 41ms (compile: 4ms, proxy.ts: 5ms, render: 32ms)
+ ✓ Compiled in 51ms
+prisma:query SELECT 1
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Area`.`id` FROM `main`.`Area` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Equipamento`.`id` FROM `main`.`Equipamento` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Parada`.`id` FROM `main`.`Parada` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Teste`.`id` FROM `main`.`Teste` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all`, `main`.`Teste`.`status` FROM `main`.`Teste` WHERE 1=1 GROUP BY `main`.`Teste`.`status` ORDER BY `main`.`Teste`.`status` ASC LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query SELECT `main`.`Parada`.`id`, `main`.`Parada`.`macro`, `main`.`Parada`.`nome`, `main`.`Parada`.`descricao`, `main`.`Parada`.`equipeResponsavel`, `main`.`Parada`.`dataInicio`, `main`.`Parada`.`dataFim`, `main`.`Parada`.`duracaoPrevistaHoras`, `main`.`Parada`.`status`, `main`.`Parada`.`tipo`, `main`.`Parada`.`createdAt`, `main`.`Parada`.`updatedAt` FROM `main`.`Parada` WHERE 1=1 ORDER BY `main`.`Parada`.`dataInicio` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Teste`.`id`, `main`.`Teste`.`paradaId`, `main`.`Teste`.`equipamentoId`, `main`.`Teste`.`status`, `main`.`Teste`.`observacoes`, `main`.`Teste`.`problemaDescricao`, `main`.`Teste`.`dataTeste`, `main`.`Teste`.`testadoPor`, `main`.`Teste`.`naoAplica`, `main`.`Teste`.`createdAt`, `main`.`Teste`.`updatedAt` FROM `main`.`Teste` WHERE `main`.`Teste`.`paradaId` IN (?,?,?) LIMIT ? OFFSET ?
+ GET /areas 200 in 203ms (compile: 98ms, render: 104ms)
+ GET /dashboard 200 in 77ms (compile: 4ms, proxy.ts: 6ms, render: 66ms)
