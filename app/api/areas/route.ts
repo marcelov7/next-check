@@ -2,8 +2,13 @@ import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
-  const areas = await prisma.area.findMany({ include: { equipamentos: true } });
-  return NextResponse.json(areas);
+  const areas = await prisma.area.findMany({ include: { equipamentos: { select: { id: true } } } });
+  return NextResponse.json(areas, {
+    headers: {
+      // Cache on CDN for 60s and allow stale while revalidate for 120s
+      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
+    }
+  });
 }
 
 export async function POST(request: NextRequest) {

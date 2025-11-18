@@ -6,8 +6,21 @@ export async function GET(request: NextRequest) {
   const areaId = url.searchParams.get('areaId');
   const where: any = {};
   if (areaId) where.areaId = Number(areaId);
-  const equipamentos = await prisma.equipamento.findMany({ where, include: { area: true, tipo: true } });
-  return NextResponse.json(equipamentos);
+  // select minimal fields and include only necessary relations to reduce payload
+  const equipamentos = await prisma.equipamento.findMany({
+    where,
+    select: {
+      id: true,
+      nome: true,
+      tag: true,
+      ativo: true,
+      areaId: true,
+      tipoId: true,
+      area: { select: { id: true, nome: true } },
+      tipo: { select: { id: true, nome: true } }
+    }
+  });
+  return NextResponse.json(equipamentos, { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } });
 }
 
 export async function POST(request: NextRequest) {

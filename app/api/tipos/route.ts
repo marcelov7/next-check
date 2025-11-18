@@ -2,8 +2,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
-  const tipos = await prisma.tipoEquipamento.findMany();
-  return NextResponse.json(tipos);
+  const tipos = await prisma.tipoEquipamento.findMany({ select: { id: true, nome: true, descricao: true, ativo: true } });
+  return NextResponse.json(tipos, { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } });
 }
 
 export async function POST(request: NextRequest) {

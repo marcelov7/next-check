@@ -4,9 +4,9 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest, context: any) {
   const params = await (context?.params ?? {});
   const id = Number(params.id);
-  const area = await prisma.area.findUnique({ where: { id }, include: { equipamentos: true } });
+  const area = await prisma.area.findUnique({ where: { id }, include: { equipamentos: { select: { id: true } } } });
   if (!area) return NextResponse.json({ error: 'Área não encontrada' }, { status: 404 });
-  return NextResponse.json(area);
+  return NextResponse.json(area, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } });
 }
 
 export async function PUT(request: NextRequest, context: any) {

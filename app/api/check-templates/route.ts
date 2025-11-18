@@ -2,8 +2,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
-  const templates = await prisma.checkTemplate.findMany({ include: { tipo: true } });
-  return NextResponse.json(templates);
+  const templates = await prisma.checkTemplate.findMany({ select: { id: true, nome: true, descricao: true, ordem: true, obrigatorio: true, tipoId: true } });
+  return NextResponse.json(templates, { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } });
 }
 
 export async function POST(request: NextRequest) {
