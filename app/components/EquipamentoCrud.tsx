@@ -78,20 +78,20 @@ export default function EquipamentoCrud() {
           {areas.map(a=> <option key={a.id} value={a.id}>{a.nome}</option>)}
         </select>
         <div className="md:col-span-4">
-          <button type="submit" disabled={loading} className="rounded-md bg-primary px-4 py-2 text-white">{loading ? 'Criando...' : 'Criar Equipamento'}</button>
+          <button type="submit" disabled={loading} className="w-full md:w-auto rounded-md bg-primary px-4 py-2 text-white">{loading ? 'Criando...' : 'Criar Equipamento'}</button>
         </div>
       </form>
 
       <div className="space-y-2">
         {equipamentos.map(eq => (
-          <div key={eq.id} className="flex items-center justify-between rounded-md border p-3">
+          <div key={eq.id} className="flex flex-col md:flex-row items-start md:items-center justify-between rounded-md border p-3 gap-2">
             <div>
               <div className="font-medium">{eq.nome} <span className="text-sm text-muted-foreground">({eq.tag})</span></div>
               <div className="text-sm text-muted-foreground">Área: {eq.area?.nome ?? '—'}</div>
             </div>
             <div className="flex gap-2">
-              <button onClick={()=>edit(eq)} className="rounded-md border px-3 py-1">Editar</button>
-              <button onClick={()=>remove(eq.id)} className="rounded-md border px-3 py-1 text-red-600">Excluir</button>
+              <button onClick={()=>edit(eq)} className="rounded-md border px-3 py-1 text-sm md:text-base">Editar</button>
+              <button onClick={()=>remove(eq.id)} className="rounded-md border px-3 py-1 text-red-600 text-sm md:text-base">Excluir</button>
             </div>
           </div>
         ))}

@@ -55,31 +55,31 @@ export default function CheckTemplateCrud() {
     <div>
       <h2 className="text-2xl font-semibold mb-4">Check Templates</h2>
       <form onSubmit={create} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
-        <input required value={nome} onChange={(e)=>setNome(e.target.value)} placeholder="Nome do check" className="rounded-md border px-3 py-2" />
-        <select value={String(tipoId)} onChange={(e)=>setTipoId(e.target.value)} className="rounded-md border px-3 py-2">
+        <input required value={nome} onChange={(e)=>setNome(e.target.value)} placeholder="Nome do check" className="w-full rounded-md border px-3 py-2" />
+        <select value={String(tipoId)} onChange={(e)=>setTipoId(e.target.value)} className="w-full rounded-md border px-3 py-2">
           <option value="">Selecione o tipo</option>
           {tipos.map(t=> <option key={t.id} value={t.id}>{t.nome}</option>)}
         </select>
-        <input value={String(ordem)} onChange={(e)=>setOrdem(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Ordem (opcional)" className="rounded-md border px-3 py-2" />
+        <input value={String(ordem)} onChange={(e)=>setOrdem(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Ordem (opcional)" className="w-full rounded-md border px-3 py-2" />
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-2"><input type="checkbox" checked={obrigatorio} onChange={(e)=>setObrigatorio(e.target.checked)} /> Obrigatório</label>
         </div>
-        <input value={descricao} onChange={(e)=>setDescricao(e.target.value)} placeholder="Descrição" className="col-span-1 md:col-span-4 rounded-md border px-3 py-2" />
+        <input value={descricao} onChange={(e)=>setDescricao(e.target.value)} placeholder="Descrição" className="col-span-1 md:col-span-4 w-full rounded-md border px-3 py-2" />
         <div className="md:col-span-4">
-          <button type="submit" className="rounded-md bg-primary px-4 py-2 text-white">Criar Template</button>
+          <button type="submit" className="w-full md:w-auto rounded-md bg-primary px-4 py-2 text-white">Criar Template</button>
         </div>
       </form>
 
       <div className="space-y-2">
         {templates.map(tpl => (
-          <div key={tpl.id} className="flex items-center justify-between rounded-md border p-3">
+          <div key={tpl.id} className="flex flex-col md:flex-row items-start md:items-center justify-between rounded-md border p-3 gap-2">
             <div>
               <div className="font-medium">{tpl.nome} <span className="text-sm text-muted-foreground">{tpl.tipo?.nome ? ` — ${tpl.tipo.nome}` : ''}</span></div>
               <div className="text-sm text-muted-foreground">{tpl.descricao}</div>
             </div>
             <div className="flex gap-2">
-              <button onClick={()=>edit(tpl)} className="rounded-md border px-3 py-1">Editar</button>
-              <button onClick={()=>remove(tpl.id)} className="rounded-md border px-3 py-1 text-red-600">Excluir</button>
+              <button onClick={()=>edit(tpl)} className="rounded-md border px-3 py-1 text-sm md:text-base">Editar</button>
+              <button onClick={()=>remove(tpl.id)} className="rounded-md border px-3 py-1 text-red-600 text-sm md:text-base">Excluir</button>
             </div>
           </div>
         ))}

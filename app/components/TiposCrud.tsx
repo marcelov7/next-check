@@ -44,23 +44,23 @@ export default function TiposCrud() {
     <div>
       <h2 className="text-2xl font-semibold mb-4">Tipos de Equipamento</h2>
       <form onSubmit={createTipo} className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
-        <input required value={nome} onChange={(e)=>setNome(e.target.value)} placeholder="Nome" className="rounded-md border px-3 py-2" />
-        <input value={descricao} onChange={(e)=>setDescricao(e.target.value)} placeholder="Descrição" className="rounded-md border px-3 py-2" />
+        <input required value={nome} onChange={(e)=>setNome(e.target.value)} placeholder="Nome" className="w-full rounded-md border px-3 py-2" />
+        <input value={descricao} onChange={(e)=>setDescricao(e.target.value)} placeholder="Descrição" className="w-full rounded-md border px-3 py-2" />
         <div>
-          <button type="submit" disabled={loading} className="rounded-md bg-primary px-4 py-2 text-white">{loading ? 'Criando...' : 'Criar Tipo'}</button>
+          <button type="submit" disabled={loading} className="w-full md:w-auto rounded-md bg-primary px-4 py-2 text-white">{loading ? 'Criando...' : 'Criar Tipo'}</button>
         </div>
       </form>
 
       <div className="space-y-2">
         {tipos.map(t => (
-          <div key={t.id} className="flex items-center justify-between rounded-md border p-3">
+          <div key={t.id} className="flex flex-col md:flex-row items-start md:items-center justify-between rounded-md border p-3 gap-2">
             <div>
               <div className="font-medium">{t.nome}</div>
               <div className="text-sm text-muted-foreground">{t.descricao}</div>
             </div>
             <div className="flex gap-2">
-              <button onClick={()=>edit(t)} className="rounded-md border px-3 py-1">Editar</button>
-              <button onClick={()=>remove(t.id)} className="rounded-md border px-3 py-1 text-red-600">Excluir</button>
+              <button onClick={()=>edit(t)} className="rounded-md border px-3 py-1 text-sm md:text-base">Editar</button>
+              <button onClick={()=>remove(t.id)} className="rounded-md border px-3 py-1 text-red-600 text-sm md:text-base">Excluir</button>
             </div>
           </div>
         ))}
