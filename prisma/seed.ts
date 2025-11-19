@@ -1,10 +1,9 @@
-import { PrismaClient, ParadaStatus, ParadaTipo, TesteStatus } from "@prisma/client";
+import { ParadaStatus, ParadaTipo, TesteStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
+import { prisma } from "../lib/prisma";
 
 dotenv.config();
-
-const prisma = new PrismaClient();
 
 async function main() {
   await prisma.teste.deleteMany();
