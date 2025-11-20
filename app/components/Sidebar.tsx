@@ -77,7 +77,10 @@ function SidebarContent({ onNavigate, isCollapsed }: { onNavigate?: () => void; 
         </div>
       ) : (
         <div className="mb-4 flex items-center justify-center px-2">
-          <ThemeToggle />
+          {/* when collapsed, show a compact dashboard icon instead of the full title to reduce clutter */}
+          <Link href="/dashboard" className="text-foreground/90" onClick={onNavigate} aria-label="Dashboard">
+            <LayoutDashboard className="h-5 w-5" />
+          </Link>
         </div>
       )}
 
@@ -143,6 +146,12 @@ function SidebarContent({ onNavigate, isCollapsed }: { onNavigate?: () => void; 
       </nav>
 
       <div className="mt-auto border-t border-border pt-4">
+        {/* when collapsed, surface the theme toggle near the bottom to avoid top clutter */}
+        {isCollapsed && (
+          <div className="mb-3 flex items-center justify-center px-2">
+            <ThemeToggle />
+          </div>
+        )}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           title={isCollapsed ? "Sair" : undefined}
@@ -173,10 +182,10 @@ export default function Sidebar() {
       >
         <SidebarContent isCollapsed={isCollapsed} />
         
-        {/* Toggle button */}
+        {/* Toggle button (use transform to avoid affecting layout width and horizontal scroll) */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-6 z-50 rounded-full border border-border bg-card p-1 shadow-md hover:bg-card/80"
+          className="absolute right-0 top-4 z-50 rounded-full border border-border bg-card p-1 shadow-md transform translate-x-1/2 hover:bg-card/80"
           aria-label={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
         >
           {isCollapsed ? (
