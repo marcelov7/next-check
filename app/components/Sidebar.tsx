@@ -149,7 +149,7 @@ function SidebarContent({ onNavigate, isCollapsed }: { onNavigate?: () => void; 
         {/* when collapsed, surface the theme toggle near the bottom to avoid top clutter */}
         {isCollapsed && (
           <div className="mb-3 flex items-center justify-center px-2">
-            <ThemeToggle />
+            <ThemeToggle variant="ghost" className="h-9 w-9" />
           </div>
         )}
         <button
@@ -175,12 +175,14 @@ export default function Sidebar() {
     <>
       {/* Desktop sidebar */}
       <aside
-        className={`app-sidebar fixed left-0 top-0 hidden h-screen shrink-0 overflow-y-auto border-r border-border bg-card md:block transition-all duration-300 ${
+        className={`app-sidebar fixed left-0 top-0 hidden h-screen shrink-0 border-r border-border bg-card md:block transition-all duration-300 ${
           isCollapsed ? "w-16" : "w-64"
         }`}
         style={{ backgroundColor: "hsl(var(--card))" }}
       >
-        <SidebarContent isCollapsed={isCollapsed} />
+        <div className="h-full w-full overflow-y-auto overflow-x-hidden">
+          <SidebarContent isCollapsed={isCollapsed} />
+        </div>
         
         {/* Toggle button (use transform to avoid affecting layout width and horizontal scroll) */}
         <button
