@@ -13,7 +13,8 @@ export default async function UsuariosPage() {
   if (!session) redirect('/login');
   const s: any = session;
   const me = await prisma.user.findUnique({ where: { id: Number(s.user?.id) }, select: { role: true } });
-  if (me?.role !== 'superadmin') redirect('/');
+  // allow both superadmin and admin to access the users management page
+  if (!(me?.role === 'superadmin' || me?.role === 'admin')) redirect('/');
 
   return (
     <PageLayout>

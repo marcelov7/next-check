@@ -122,7 +122,7 @@ function SidebarContent({ onNavigate, isCollapsed }: { onNavigate?: () => void; 
       {/* Secondary navigation */}
       <nav className="space-y-1">
         {secondaryNav
-          .filter((item) => (item.href === '/usuarios' ? role === 'superadmin' : true))
+          .filter((item) => (item.href === '/usuarios' ? (role === 'superadmin' || role === 'admin') : true))
           .map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
