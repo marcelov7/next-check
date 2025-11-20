@@ -26,10 +26,10 @@ export default function ParadasAtivas() {
 
   // Form state
   const [nome, setNome] = useState("");
+  const [codigo, setCodigo] = useState(""); // Código / Macro da parada
   const [descricao, setDescricao] = useState("");
   const [tipo, setTipo] = useState("preventiva");
   const [equipe, setEquipe] = useState("");
-  const [macro, setMacro] = useState("");
   const [duracao, setDuracao] = useState("");
   const [creating, setCreating] = useState(false);
   const [createdParada, setCreatedParada] = useState<Parada | null>(null);
@@ -63,9 +63,10 @@ export default function ParadasAtivas() {
         body: JSON.stringify({
           nome,
           descricao,
-          tipo,
+          // map UI 'programada' to 'preventiva' in the DB enum
+          tipo: tipo === 'programada' ? 'preventiva' : tipo,
           equipeResponsavel: equipe,
-          macro,
+          macro: codigo,
           duracaoPrevistaHoras: duracao,
         }),
       });
@@ -130,15 +131,22 @@ export default function ParadasAtivas() {
                 </div>
 
                 <form onSubmit={handleCreate} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">Nome da Parada</label>
-                    <input required value={nome} onChange={e => setNome(e.target.value)} className="w-full rounded-md border px-3 py-2 text-sm bg-background" placeholder="Ex: Manutenção Linha 1" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Código da Parada (Macro)</label>
+                      <input required value={codigo} onChange={e => setCodigo(e.target.value)} className="w-full rounded-md border px-3 py-2 text-sm bg-background" placeholder="Ex: GP-2025.04" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Nome da Parada</label>
+                      <input required value={nome} onChange={e => setNome(e.target.value)} className="w-full rounded-md border px-3 py-2 text-sm bg-background" placeholder="Ex: Parada programada do forno" />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="text-sm font-medium">Tipo</label>
                       <select value={tipo} onChange={e => setTipo(e.target.value)} className="w-full rounded-md border px-3 py-2 text-sm bg-background">
+                        <option value="programada">Programada</option>
                         <option value="preventiva">Preventiva</option>
                         <option value="corretiva">Corretiva</option>
                         <option value="emergencial">Emergencial</option>
@@ -148,11 +156,6 @@ export default function ParadasAtivas() {
                       <label className="text-sm font-medium">Duração Prevista (horas)</label>
                       <input type="number" min={0} value={duracao} onChange={e => setDuracao(e.target.value)} className="w-full rounded-md border px-3 py-2 text-sm bg-background" placeholder="Ex: 4" />
                     </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">Macro / Área</label>
-                    <input value={macro} onChange={e => setMacro(e.target.value)} className="w-full rounded-md border px-3 py-2 text-sm bg-background" placeholder="Ex: Caldeiraria" />
                   </div>
 
                   <div className="space-y-1">
@@ -187,7 +190,7 @@ export default function ParadasAtivas() {
                   </div>
 
                   <div className="text-sm text-muted-foreground">
-                    <div><strong>Macro:</strong> {macro || '-'}</div>
+                    <div><strong>Macro:</strong> {codigo || '-'}</div>
                     <div><strong>Equipe:</strong> {equipe || '-'}</div>
                     <div><strong>Início:</strong> {new Date().toLocaleString('pt-BR')}</div>
                     <div><strong>Previsto:</strong> {duracao ? `${duracao}h` : '-'}</div>
