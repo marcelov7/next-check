@@ -28,6 +28,13 @@ enum TesteStatus {
   nao_aplica
 }
 
+enum CheckTemplateTipoCampo {
+  status
+  texto
+  numero
+  temperatura
+}
+
 model Area {
   id        Int           @id @default(autoincrement())
   nome      String
@@ -72,6 +79,11 @@ model CheckTemplate {
   descricao   String?
   ordem       Int?
   obrigatorio Boolean  @default(true)
+  tipoCampo   CheckTemplateTipoCampo @default(status)
+  unidade     String?
+  valorMinimo Float?
+  valorMaximo Float?
+  testes      Teste[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -98,6 +110,8 @@ model Teste {
   paradaId           Int
   equipamento        Equipamento @relation(fields: [equipamentoId], references: [id])
   equipamentoId      Int
+  checkTemplate      CheckTemplate? @relation(fields: [checkTemplateId], references: [id])
+  checkTemplateId    Int?
   status             TesteStatus @default(pendente)
   observacoes        String?
   problemaDescricao  String?

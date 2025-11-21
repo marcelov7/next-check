@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Clock, Users, AlertTriangle, ShieldCheck, Wrench } from "lucide-react";
+import ParadaActions from "@/app/components/ParadaActions";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,19 @@ export default async function ParadaDetalhesPage({ params }: { params: Promise<{
   const { id } = await params;
   const parada = await prisma.parada.findUnique({
     where: { id: Number(id) },
-    include: { testes: true }
+    include: {
+      testes: {
+        include: {
+          equipamento: {
+            include: {
+              area: true,
+              tipo: true,
+            },
+          },
+          checkTemplate: true,
+        },
+      },
+    }
   });
 
   if (!parada) notFound();
@@ -98,17 +111,111 @@ export default async function ParadaDetalhesPage({ params }: { params: Promise<{
             </section>
 
             <section className="rounded-xl border bg-card p-6 shadow-sm">
-              <h2 className="text-lg font-semibold mb-4">Testes Realizados</h2>
+              <h2 className="text-lg font-semibold mb-4">Checks da parada</h2>
               {parada.testes.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Nenhum teste registrado ainda.</p>
+                <p className="text-muted-foreground text-sm">Nenhum check configurado ainda.</p>
               ) : (
-                <ul className="space-y-2">
-                  {parada.testes.map(teste => (
-                    <li key={teste.id} className="p-3 border rounded-lg text-sm">
-                      Teste #{teste.id} - {teste.status}
-                    </li>
+                <div className="space-y-4">
+                  {Object.entries(
+                    parada.testes.reduce((acc: any, teste) => {
+                      const areaNome = teste.equipamento.area?.nome ?? "Sem área";
+                      if (!acc[areaNome]) acc[areaNome] = [];
+                      acc[areaNome].push(teste);
+                      return acc;
+                    }, {} as Record<string, typeof parada.testes>)
+                  ).map(([areaNome, testesDaArea]) => (
+                    <div key={areaNome} className="space-y-2">
+                      <h3 className="text-sm font-semibold text-muted-foreground">{areaNome}</h3>
+                      <div className="space-y-2">
+                        {Object.entries(
+                          (testesDaArea as typeof parada.testes).reduce((acc: any, teste) => {
+                            const chaveEquip = `${teste.equipamento.id}`;
+                            if (!acc[chaveEquip]) acc[chaveEquip] = { equipamento: teste.equipamento, testes: [] as typeof parada.testes };
+                            acc[chaveEquip].testes.push(teste);
+                            return acc;
+                          }, {} as Record<string, { equipamento: any; testes: typeof parada.testes }>)
+                        ).map(([equipKey, { equipamento, testes }]) => (
+                          <div key={equipKey} className="rounded-lg border bg-background/60 p-3 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div>
+                                <div className="font-medium text-sm">
+                                  {equipamento.nome}{" "}
+                                  <span className="text-xs text-muted-foreground">
+                                    ({equipamento.tag})
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-muted-foreground">
+                                  Tipo: {equipamento.tipo?.nome ?? "—"}
+                                </div>
+                              </div>
+                            </div>
+                            <ul className="space-y-1">
+                              {testes.map((teste) => (
+                                <li key={teste.id} className="flex items-center justify-between gap-2 rounded-md border bg-card px-3 py-2 text-xs">
+                                  <div>
+                                    <div className="font-medium">
+                                      {teste.checkTemplate?.nome ?? `Check #${teste.id}`}
+                                    </div>
+                                    {teste.checkTemplate?.descricao && (
+                                      <div className="text-[11px] text-muted-foreground">
+                                        {teste.checkTemplate.descricao}
+                                      </div>
+                                    )}
+                                    {teste.checkTemplate && (
+                                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                                        {teste.checkTemplate.tipoCampo === "status" && "Tipo: Status (OK / Problema / N/A)"}
+                                        {teste.checkTemplate.tipoCampo === "texto" && "Tipo: Texto livre"}
+                                        {teste.checkTemplate.tipoCampo === "numero" && (
+                                          <>
+                                            Tipo: Número
+                                            {teste.checkTemplate.unidade ? ` · Unidade: ${teste.checkTemplate.unidade}` : ""}
+                                            {teste.checkTemplate.valorMinimo != null ? ` · Mín: ${teste.checkTemplate.valorMinimo}` : ""}
+                                            {teste.checkTemplate.valorMaximo != null ? ` · Máx: ${teste.checkTemplate.valorMaximo}` : ""}
+                                          </>
+                                        )}
+                                        {teste.checkTemplate.tipoCampo === "temperatura" && (
+                                          <>
+                                            Tipo: Temperatura
+                                            {teste.checkTemplate.unidade ? ` · Unidade: ${teste.checkTemplate.unidade}` : ""}
+                                            {teste.checkTemplate.valorMinimo != null ? ` · Mín: ${teste.checkTemplate.valorMinimo}` : ""}
+                                            {teste.checkTemplate.valorMaximo != null ? ` · Máx: ${teste.checkTemplate.valorMaximo}` : ""}
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ${
+                                      teste.status === "ok"
+                                        ? "bg-emerald-50 text-emerald-700"
+                                        : "bg-muted text-muted-foreground"
+                                    }`}>
+                                      OK
+                                    </span>
+                                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ${
+                                      teste.status === "problema"
+                                        ? "bg-red-50 text-red-700"
+                                        : "bg-muted text-muted-foreground"
+                                    }`}>
+                                      Problema
+                                    </span>
+                                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ${
+                                      teste.status === "nao_aplica"
+                                        ? "bg-slate-50 text-slate-700"
+                                        : "bg-muted text-muted-foreground"
+                                    }`}>
+                                      N/A
+                                    </span>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
             </section>
           </div>
@@ -116,14 +223,7 @@ export default async function ParadaDetalhesPage({ params }: { params: Promise<{
           <div className="space-y-6">
             <section className="rounded-xl border bg-card p-6 shadow-sm">
               <h2 className="text-sm font-semibold mb-4 uppercase tracking-wider text-muted-foreground">Ações</h2>
-              <div className="space-y-2">
-                <button disabled className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                  Adicionar Teste (Em breve)
-                </button>
-                <button disabled className="w-full rounded-md border bg-background px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50">
-                  Concluir Parada (Em breve)
-                </button>
-              </div>
+              <ParadaActions paradaId={parada.id} />
             </section>
           </div>
         </div>

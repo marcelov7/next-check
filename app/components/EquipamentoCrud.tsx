@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from 'next/navigation';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog";
+import { Button } from "@/app/components/ui/button";
 
 type Area = { id: number; nome: string };
 type Tipo = { id: number; nome: string };
@@ -56,14 +64,52 @@ export default function EquipamentoCrud() {
     if (res.ok) fetchEquip(); else alert('Erro ao deletar');
   };
 
-  const edit = async (equip: Equip) => {
-    const newName = prompt('Nome', equip.nome) ?? equip.nome;
-    const newTag = prompt('Tag', equip.tag) ?? equip.tag;
-    const newDesc = prompt('Descrição', equip.descricao ?? '') ?? equip.descricao ?? '';
-    const newAreaId = prompt('Area ID', String(equip.area.id)) ?? String(equip.area.id);
-    const newTipoId = prompt('Tipo ID (vazio para nenhum)', String(equip.tipo?.id ?? '')) ?? String(equip.tipo?.id ?? '');
-    const res = await fetch(`/api/equipamentos/${equip.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: newName, tag: newTag, descricao: newDesc, areaId: Number(newAreaId), tipoId: newTipoId ? Number(newTipoId) : null }) });
-    if (res.ok) fetchEquip(); else alert('Erro ao atualizar');
+  // Modal de edição de equipamento
+  const [editing, setEditing] = useState<Equip | null>(null);
+  const [editNome, setEditNome] = useState("");
+  const [editTag, setEditTag] = useState("");
+  const [editDescricao, setEditDescricao] = useState("");
+  const [editAreaId, setEditAreaId] = useState<number | ''>('');
+  const [editTipoId, setEditTipoId] = useState<number | ''>('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const openEdit = (equip: Equip) => {
+    setEditing(equip);
+    setEditNome(equip.nome);
+    setEditTag(equip.tag);
+    setEditDescricao(equip.descricao ?? "");
+    setEditAreaId(equip.area?.id ?? '');
+    setEditTipoId(equip.tipo?.id ?? '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editing) return;
+    if (!editAreaId) {
+      alert("Selecione a área do equipamento");
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/equipamentos/${editing.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: editNome,
+          tag: editTag,
+          descricao: editDescricao,
+          areaId: Number(editAreaId),
+          tipoId: editTipoId ? Number(editTipoId) : null,
+        }),
+      });
+      if (res.ok) {
+        setEditing(null);
+        await fetchEquip();
+      } else {
+        alert("Erro ao atualizar equipamento");
+      }
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   return (
@@ -94,12 +140,116 @@ export default function EquipamentoCrud() {
               <div className="text-sm text-muted-foreground">Área: {eq.area?.nome ?? '—'}</div>
             </div>
             <div className="flex gap-2">
-              <button onClick={()=>edit(eq)} className="rounded-md border px-3 py-1 text-sm md:text-base">Editar</button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openEdit(eq)}
+              >
+                Editar
+              </Button>
               <button onClick={()=>remove(eq.id)} className="rounded-md border px-3 py-1 text-red-600 text-sm md:text-base">Excluir</button>
             </div>
           </div>
         ))}
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Equipamento</DialogTitle>
+          </DialogHeader>
+          {editing && (
+            <div className="space-y-4 mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Nome
+                  </label>
+                  <input
+                    value={editNome}
+                    onChange={(e) => setEditNome(e.target.value)}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Tag
+                  </label>
+                  <input
+                    value={editTag}
+                    onChange={(e) => setEditTag(e.target.value)}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Área
+                  </label>
+                  <select
+                    value={editAreaId === '' ? '' : String(editAreaId)}
+                    onChange={(e) => setEditAreaId(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                  >
+                    <option value="">Selecione a área</option>
+                    {areas.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Tipo (grupo)
+                  </label>
+                  <select
+                    value={editTipoId === '' ? '' : String(editTipoId)}
+                    onChange={(e) => setEditTipoId(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                  >
+                    <option value="">Nenhum</option>
+                    {tipos.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Descrição
+                </label>
+                <textarea
+                  value={editDescricao}
+                  onChange={(e) => setEditDescricao(e.target.value)}
+                  className="w-full rounded-md border px-3 py-2 text-sm min-h-[80px]"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditing(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveEdit}
+              disabled={savingEdit}
+            >
+              {savingEdit ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

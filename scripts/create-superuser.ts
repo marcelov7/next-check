@@ -12,24 +12,22 @@ async function main() {
 
   const hashed = await bcrypt.hash(password, 10);
 
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: {
-      name,
-      username,
-      password: hashed,
-      role: "superadmin",
-    },
-    create: {
-      name,
-      email,
-      username,
-      password: hashed,
-      role: "superadmin",
-    },
-  });
+  // Try to find existing user by email or username to avoid unique constraint errors
+  const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { username }] } });
 
-  console.log(`Superadmin ensured: ${user.email} (username: ${user.username})`);
+  let user;
+  if (existing) {
+    user = await prisma.user.update({
+      where: { id: existing.id },
+      data: { name, username, password: hashed, role: "superadmin" },
+    });
+    console.log(`Superadmin updated: ${user.email} (username: ${user.username})`);
+  } else {
+    user = await prisma.user.create({
+      data: { name, email, username, password: hashed, role: "superadmin" },
+    });
+    console.log(`Superadmin created: ${user.email} (username: ${user.username})`);
+  }
 }
 
 main()

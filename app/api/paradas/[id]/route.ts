@@ -11,7 +11,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const parada = await prisma.parada.findUnique({
     where: { id: Number(id) },
     include: {
-      testes: true
+      testes: {
+        include: {
+          equipamento: {
+            include: {
+              area: true,
+              tipo: true,
+            },
+          },
+          checkTemplate: true,
+        },
+      },
     }
   });
 

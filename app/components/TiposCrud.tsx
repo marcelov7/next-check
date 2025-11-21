@@ -1,6 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog";
+import { Button } from "@/app/components/ui/button";
 
 type Tipo = { id: number; nome: string; descricao?: string | null; ativo: boolean };
 
@@ -33,11 +41,39 @@ export default function TiposCrud() {
     if (res.ok) fetchTipos(); else alert('Erro ao deletar');
   };
 
-  const edit = async (t: Tipo) => {
-    const newName = prompt('Nome', t.nome) ?? t.nome;
-    const newDesc = prompt('Descrição', t.descricao ?? '') ?? t.descricao ?? '';
-    const res = await fetch(`/api/tipos/${t.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: newName, descricao: newDesc }) });
-    if (res.ok) fetchTipos(); else alert('Erro ao atualizar');
+  // Modal de edição de tipo
+  const [editing, setEditing] = useState<Tipo | null>(null);
+  const [editNome, setEditNome] = useState("");
+  const [editDescricao, setEditDescricao] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const openEdit = (t: Tipo) => {
+    setEditing(t);
+    setEditNome(t.nome);
+    setEditDescricao(t.descricao ?? "");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editing) return;
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/tipos/${editing.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: editNome,
+          descricao: editDescricao,
+        }),
+      });
+      if (res.ok) {
+        setEditing(null);
+        await fetchTipos();
+      } else {
+        alert("Erro ao atualizar tipo");
+      }
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   return (
@@ -59,12 +95,66 @@ export default function TiposCrud() {
               <div className="text-sm text-muted-foreground">{t.descricao}</div>
             </div>
             <div className="flex gap-2">
-              <button onClick={()=>edit(t)} className="rounded-md border px-3 py-1 text-sm md:text-base">Editar</button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openEdit(t)}
+              >
+                Editar
+              </Button>
               <button onClick={()=>remove(t.id)} className="rounded-md border px-3 py-1 text-red-600 text-sm md:text-base">Excluir</button>
             </div>
           </div>
         ))}
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Tipo de Equipamento</DialogTitle>
+          </DialogHeader>
+          {editing && (
+            <div className="space-y-4 mt-2">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Nome
+                </label>
+                <input
+                  value={editNome}
+                  onChange={(e) => setEditNome(e.target.value)}
+                  className="w-full rounded-md border px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Descrição
+                </label>
+                <textarea
+                  value={editDescricao}
+                  onChange={(e) => setEditDescricao(e.target.value)}
+                  className="w-full rounded-md border px-3 py-2 text-sm min-h-[80px]"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditing(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveEdit}
+              disabled={savingEdit}
+            >
+              {savingEdit ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

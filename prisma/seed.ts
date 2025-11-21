@@ -19,7 +19,7 @@ async function main() {
       email: "admin@checklist.local",
       username: "admin",
       password: hashedPassword,
-      role: "admin",
+      role: "superadmin",
     },
   });
 

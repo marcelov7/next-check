@@ -1,9 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog";
+import { Button } from "@/app/components/ui/button";
 
 type Tipo = { id: number; nome: string };
-type Template = { id: number; nome: string; descricao?: string | null; ordem?: number | null; obrigatorio: boolean; tipoId: number; tipo?: Tipo };
+type Template = {
+  id: number;
+  nome: string;
+  descricao?: string | null;
+  ordem?: number | null;
+  obrigatorio: boolean;
+  tipoId: number;
+  tipoCampo?: "status" | "texto" | "numero" | "temperatura";
+  unidade?: string | null;
+  valorMinimo?: number | null;
+  valorMaximo?: number | null;
+  tipo?: Tipo;
+};
 
 export default function CheckTemplateCrud() {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -29,11 +49,43 @@ export default function CheckTemplateCrud() {
 
   useEffect(() => { fetchTipos(); fetchTemplates(); }, []);
 
+  const [tipoCampo, setTipoCampo] = useState<Template["tipoCampo"]>("status");
+  const [unidade, setUnidade] = useState("");
+  const [valorMinimo, setValorMinimo] = useState<string>("");
+  const [valorMaximo, setValorMaximo] = useState<string>("");
+
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome || !tipoId) return alert('Nome e Tipo são obrigatórios');
-    const res = await fetch('/api/check-templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, descricao, tipoId: Number(tipoId), ordem: ordem === '' ? null : Number(ordem), obrigatorio }) });
-    if (res.ok) { setNome(''); setDescricao(''); setOrdem(''); setObrigatorio(true); await fetchTemplates(); } else alert('Erro ao criar template');
+    const body: any = {
+      nome,
+      descricao,
+      tipoId: Number(tipoId),
+      ordem: ordem === '' ? null : Number(ordem),
+      obrigatorio,
+      tipoCampo,
+      unidade: unidade || null,
+      valorMinimo: valorMinimo !== "" ? Number(valorMinimo) : null,
+      valorMaximo: valorMaximo !== "" ? Number(valorMaximo) : null,
+    };
+    const res = await fetch('/api/check-templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      setNome('');
+      setDescricao('');
+      setOrdem('');
+      setObrigatorio(true);
+      setTipoCampo("status");
+      setUnidade("");
+      setValorMinimo("");
+      setValorMaximo("");
+      await fetchTemplates();
+    } else {
+      alert('Erro ao criar template');
+    }
   };
 
   const remove = async (id: number) => {
@@ -42,48 +94,366 @@ export default function CheckTemplateCrud() {
     if (res.ok) fetchTemplates(); else alert('Erro ao deletar');
   };
 
-  const edit = async (tpl: Template) => {
-    const newName = prompt('Nome', tpl.nome) ?? tpl.nome;
-    const newDesc = prompt('Descrição', tpl.descricao ?? '') ?? tpl.descricao ?? '';
-    const newOrdem = prompt('Ordem', String(tpl.ordem ?? '')) ?? String(tpl.ordem ?? '');
-    const newObrig = confirm('Obrigatório? (OK = Sim, Cancel = Não)') ? true : false;
-    const res = await fetch(`/api/check-templates/${tpl.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: newName, descricao: newDesc, ordem: newOrdem === '' ? null : Number(newOrdem), obrigatorio: newObrig }) });
-    if (res.ok) fetchTemplates(); else alert('Erro ao atualizar');
+  // Estado para modal de edição bonita
+  const [editing, setEditing] = useState<Template | null>(null);
+  const [editNome, setEditNome] = useState("");
+  const [editDescricao, setEditDescricao] = useState("");
+  const [editOrdem, setEditOrdem] = useState<string>("");
+  const [editObrigatorio, setEditObrigatorio] = useState(true);
+  const [editTipoCampo, setEditTipoCampo] =
+    useState<Template["tipoCampo"]>("status");
+  const [editUnidade, setEditUnidade] = useState("");
+  const [editValorMinimo, setEditValorMinimo] = useState<string>("");
+  const [editValorMaximo, setEditValorMaximo] = useState<string>("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const openEdit = (tpl: Template) => {
+    setEditing(tpl);
+    setEditNome(tpl.nome);
+    setEditDescricao(tpl.descricao ?? "");
+    setEditOrdem(tpl.ordem != null ? String(tpl.ordem) : "");
+    setEditObrigatorio(tpl.obrigatorio);
+    setEditTipoCampo(tpl.tipoCampo ?? "status");
+    setEditUnidade(tpl.unidade ?? "");
+    setEditValorMinimo(
+      tpl.valorMinimo != null ? String(tpl.valorMinimo) : ""
+    );
+    setEditValorMaximo(
+      tpl.valorMaximo != null ? String(tpl.valorMaximo) : ""
+    );
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editing) return;
+    setSavingEdit(true);
+    try {
+      const body: any = {
+        nome: editNome,
+        descricao: editDescricao,
+        ordem: editOrdem === "" ? null : Number(editOrdem),
+        obrigatorio: editObrigatorio,
+        tipoCampo: editTipoCampo,
+        unidade: editUnidade || null,
+        valorMinimo:
+          editValorMinimo !== "" ? Number(editValorMinimo) : null,
+        valorMaximo:
+          editValorMaximo !== "" ? Number(editValorMaximo) : null,
+      };
+      const res = await fetch(`/api/check-templates/${editing.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        setEditing(null);
+        await fetchTemplates();
+      } else {
+        alert("Erro ao atualizar template");
+      }
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">Check Templates</h2>
+      <h2 className="text-2xl font-semibold mb-2">Check Templates</h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        Crie listas de checagem por <strong>Tipo de Equipamento</strong> (Motor, Válvula, Filtro, etc.).{" "}
+        Os equipamentos herdam os checks do seu tipo automaticamente.
+      </p>
       <form onSubmit={create} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
-        <input required value={nome} onChange={(e)=>setNome(e.target.value)} placeholder="Nome do check" className="w-full rounded-md border px-3 py-2" />
-        <select value={String(tipoId)} onChange={(e)=>setTipoId(e.target.value)} className="w-full rounded-md border px-3 py-2">
-          <option value="">Selecione o tipo</option>
-          {tipos.map(t=> <option key={t.id} value={t.id}>{t.nome}</option>)}
+        <input
+          required
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          placeholder="Nome do check"
+          className="w-full rounded-md border px-3 py-2"
+        />
+        <select
+          value={String(tipoId)}
+          onChange={(e) => setTipoId(e.target.value)}
+          className="w-full rounded-md border px-3 py-2"
+        >
+          <option value="">Selecione o tipo (grupo)</option>
+          {tipos.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.nome}
+            </option>
+          ))}
         </select>
-        <input value={String(ordem)} onChange={(e)=>setOrdem(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Ordem (opcional)" className="w-full rounded-md border px-3 py-2" />
+        <select
+          value={tipoCampo}
+          onChange={(e) =>
+            setTipoCampo(
+              e.target.value as Template["tipoCampo"]
+            )
+          }
+          className="w-full rounded-md border px-3 py-2"
+        >
+          <option value="status">Status (OK / Problema / N/A)</option>
+          <option value="texto">Texto livre</option>
+          <option value="numero">Número</option>
+          <option value="temperatura">Temperatura (°C)</option>
+        </select>
+        <input
+          value={String(ordem)}
+          onChange={(e) =>
+            setOrdem(e.target.value === "" ? "" : Number(e.target.value))
+          }
+          placeholder="Ordem (opcional)"
+          className="w-full rounded-md border px-3 py-2"
+        />
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2"><input type="checkbox" checked={obrigatorio} onChange={(e)=>setObrigatorio(e.target.checked)} /> Obrigatório</label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={obrigatorio}
+              onChange={(e) => setObrigatorio(e.target.checked)}
+            />{" "}
+            Obrigatório
+          </label>
         </div>
-        <input value={descricao} onChange={(e)=>setDescricao(e.target.value)} placeholder="Descrição" className="col-span-1 md:col-span-4 w-full rounded-md border px-3 py-2" />
+        {(tipoCampo === "numero" || tipoCampo === "temperatura") && (
+          <>
+            <input
+              value={unidade}
+              onChange={(e) => setUnidade(e.target.value)}
+              placeholder={
+                tipoCampo === "temperatura" ? "Unidade (ex: °C)" : "Unidade (ex: bar)"
+              }
+              className="w-full rounded-md border px-3 py-2"
+            />
+            <input
+              value={valorMinimo}
+              onChange={(e) => setValorMinimo(e.target.value)}
+              placeholder="Valor mínimo (opcional)"
+              className="w-full rounded-md border px-3 py-2"
+            />
+            <input
+              value={valorMaximo}
+              onChange={(e) => setValorMaximo(e.target.value)}
+              placeholder="Valor máximo (opcional)"
+              className="w-full rounded-md border px-3 py-2"
+            />
+          </>
+        )}
+        <input
+          value={descricao}
+          onChange={(e) => setDescricao(e.target.value)}
+          placeholder="Descrição (o que será feito)"
+          className="col-span-1 md:col-span-4 w-full rounded-md border px-3 py-2"
+        />
         <div className="md:col-span-4">
-          <button type="submit" className="w-full md:w-auto rounded-md bg-primary px-4 py-2 text-white">Criar Template</button>
+          <button
+            type="submit"
+            className="w-full md:w-auto rounded-md bg-primary px-4 py-2 text-white"
+          >
+            Criar Template
+          </button>
         </div>
       </form>
 
-      <div className="space-y-2">
-        {templates.map(tpl => (
-          <div key={tpl.id} className="flex flex-col md:flex-row items-start md:items-center justify-between rounded-md border p-3 gap-2">
-            <div>
-              <div className="font-medium">{tpl.nome} <span className="text-sm text-muted-foreground">{tpl.tipo?.nome ? ` — ${tpl.tipo.nome}` : ''}</span></div>
-              <div className="text-sm text-muted-foreground">{tpl.descricao}</div>
+      <div className="space-y-4">
+        {tipos.map((tipo) => {
+          const doTipo = templates.filter((tpl) => tpl.tipoId === tipo.id);
+          if (!doTipo.length) return null;
+          return (
+            <div key={tipo.id} className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground">
+                {tipo.nome}
+              </h3>
+              <div className="space-y-2">
+                {doTipo.map((tpl) => (
+                  <div
+                    key={tpl.id}
+                    className="flex flex-col md:flex-row items-start md:items-center justify-between rounded-md border p-3 gap-2"
+                  >
+                    <div>
+                      <div className="font-medium">
+                        {tpl.nome}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
+                        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px]">
+                          {tpl.tipoCampo === "status" && "Status (OK/Problema/N/A)"}
+                          {tpl.tipoCampo === "texto" && "Texto"}
+                          {tpl.tipoCampo === "numero" && "Número"}
+                          {tpl.tipoCampo === "temperatura" && "Temperatura"}
+                        </span>
+                        {(tpl.tipoCampo === "numero" || tpl.tipoCampo === "temperatura") &&
+                          (tpl.unidade || tpl.valorMinimo != null || tpl.valorMaximo != null) && (
+                            <span className="text-[11px] text-muted-foreground">
+                              {tpl.unidade ? `Unidade: ${tpl.unidade}` : ""}
+                              {tpl.valorMinimo != null ? ` · Mín: ${tpl.valorMinimo}` : ""}
+                              {tpl.valorMaximo != null ? ` · Máx: ${tpl.valorMaximo}` : ""}
+                            </span>
+                          )}
+                      </div>
+                      {tpl.descricao && (
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {tpl.descricao}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEdit(tpl)}
+                      >
+                        Editar
+                      </Button>
+                      <button
+                        onClick={() => remove(tpl.id)}
+                        className="rounded-md border px-3 py-1 text-red-600 text-sm md:text-base"
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button onClick={()=>edit(tpl)} className="rounded-md border px-3 py-1 text-sm md:text-base">Editar</button>
-              <button onClick={()=>remove(tpl.id)} className="rounded-md border px-3 py-1 text-red-600 text-sm md:text-base">Excluir</button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
+        {templates.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Nenhum check template criado ainda. Crie checks para um tipo de equipamento acima.
+          </p>
+        )}
       </div>
+
+      {/* Modal de edição de template */}
+      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Check</DialogTitle>
+          </DialogHeader>
+          {editing && (
+            <div className="space-y-4 mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Nome do check
+                  </label>
+                  <input
+                    value={editNome}
+                    onChange={(e) => setEditNome(e.target.value)}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Tipo do campo
+                  </label>
+                  <select
+                    value={editTipoCampo}
+                    onChange={(e) =>
+                      setEditTipoCampo(
+                        e.target.value as Template["tipoCampo"]
+                      )
+                    }
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                  >
+                    <option value="status">
+                      Status (OK / Problema / N/A)
+                    </option>
+                    <option value="texto">Texto livre</option>
+                    <option value="numero">Número</option>
+                    <option value="temperatura">Temperatura</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Ordem
+                  </label>
+                  <input
+                    value={editOrdem}
+                    onChange={(e) => setEditOrdem(e.target.value)}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                    placeholder="Opcional"
+                  />
+                </div>
+                {(editTipoCampo === "numero" ||
+                  editTipoCampo === "temperatura") && (
+                  <>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Unidade
+                      </label>
+                      <input
+                        value={editUnidade}
+                        onChange={(e) => setEditUnidade(e.target.value)}
+                        className="w-full rounded-md border px-3 py-2 text-sm"
+                        placeholder={
+                          editTipoCampo === "temperatura"
+                            ? "°C"
+                            : "bar, A, m/s..."
+                        }
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        value={editValorMinimo}
+                        onChange={(e) =>
+                          setEditValorMinimo(e.target.value)
+                        }
+                        className="w-full rounded-md border px-3 py-2 text-sm"
+                        placeholder="Mín"
+                      />
+                      <input
+                        value={editValorMaximo}
+                        onChange={(e) =>
+                          setEditValorMaximo(e.target.value)
+                        }
+                        className="w-full rounded-md border px-3 py-2 text-sm"
+                        placeholder="Máx"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={editObrigatorio}
+                    onChange={(e) => setEditObrigatorio(e.target.checked)}
+                  />
+                  Obrigatório
+                </label>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Descrição
+                </label>
+                <textarea
+                  value={editDescricao}
+                  onChange={(e) => setEditDescricao(e.target.value)}
+                  className="w-full rounded-md border px-3 py-2 text-sm min-h-[80px]"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditing(null)}
+            >
+              Cancelar
+            </Button>
+            <Button type="button" onClick={handleSaveEdit} disabled={savingEdit}>
+              {savingEdit ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
