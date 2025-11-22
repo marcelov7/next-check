@@ -83,9 +83,11 @@ fi
 echo "[deploy] Executando build..."
 "${BUILD_CMD[@]}"
 
-# Reiniciar com PM2
+# Reiniciar com PM2 (prefere pm2 global quando disponível)
 echo "[deploy] Reiniciando aplicação com PM2 (nome: next-checklist)"
-if command -v pm2 >/dev/null 2>&1 || command -v npx >/dev/null 2>&1; then
+if command -v pm2 >/dev/null 2>&1; then
+  pm2 restart next-checklist 2>/dev/null || pm2 start --name next-checklist "${PKG_MANAGER} start"
+elif command -v npx >/dev/null 2>&1; then
   npx pm2 restart next-checklist 2>/dev/null || npx pm2 start --name next-checklist "${PKG_MANAGER} start"
 else
   echo "[warning] pm2 não encontrado. Você pode iniciar a aplicação manualmente: ${PKG_MANAGER} start"

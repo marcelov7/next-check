@@ -203,7 +203,7 @@ export default function ParadaChecks({ testes }: Props) {
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = String(reader.result);
-      updateLocalTeste(teste.id, { [field]: dataUrl } as LocalTesteState);
+      updateLocalTeste(teste.id, { [field]: dataUrl } as unknown as LocalTesteState);
       salvarTeste(teste.id, { [field]: dataUrl } as Partial<LocalTesteState>);
     };
     reader.readAsDataURL(file);
@@ -213,7 +213,7 @@ export default function ParadaChecks({ testes }: Props) {
     teste: LocalTesteState,
     field: "evidenciaImagem" | "resolucaoImagem"
   ) => {
-    updateLocalTeste(teste.id, { [field]: null } as LocalTesteState);
+    updateLocalTeste(teste.id, { [field]: null } as unknown as LocalTesteState);
     salvarTeste(teste.id, { [field]: null } as Partial<LocalTesteState>);
   };
 
