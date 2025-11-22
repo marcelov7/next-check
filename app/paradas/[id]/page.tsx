@@ -37,6 +37,16 @@ export default async function ParadaDetalhesPage({ params }: { params: Promise<{
     }
   };
 
+  const groupTestsByEquip = (testesList: typeof parada.testes) => {
+    const grouped = testesList.reduce((acc: any, teste) => {
+      const chaveEquip = `${teste.equipamento.id}`;
+      if (!acc[chaveEquip]) acc[chaveEquip] = { equipamento: teste.equipamento, testes: [] as typeof parada.testes };
+      acc[chaveEquip].testes.push(teste);
+      return acc;
+    }, {} as Record<string, { equipamento: any; testes: typeof parada.testes }>);
+    return Object.entries(grouped) as [string, { equipamento: any; testes: typeof parada.testes }][];
+  };
+
   return (
     <PageLayout>
       <div className="mx-auto max-w-5xl">
@@ -127,14 +137,7 @@ export default async function ParadaDetalhesPage({ params }: { params: Promise<{
                     <div key={areaNome} className="space-y-2">
                       <h3 className="text-sm font-semibold text-muted-foreground">{areaNome}</h3>
                       <div className="space-y-2">
-                        {Object.entries(
-                          (testesDaArea as typeof parada.testes).reduce((acc: any, teste) => {
-                            const chaveEquip = `${teste.equipamento.id}`;
-                            if (!acc[chaveEquip]) acc[chaveEquip] = { equipamento: teste.equipamento, testes: [] as typeof parada.testes };
-                            acc[chaveEquip].testes.push(teste);
-                            return acc;
-                          }, {} as Record<string, { equipamento: any; testes: typeof parada.testes }>)
-                        ).map(([equipKey, { equipamento, testes }]) => (
+                        {groupTestsByEquip(testesDaArea as typeof parada.testes).map(([equipKey, { equipamento, testes }]) => (
                           <div key={equipKey} className="rounded-lg border bg-background/60 p-3 space-y-2">
                             <div className="flex items-center justify-between gap-2">
                               <div>
