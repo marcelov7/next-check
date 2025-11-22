@@ -6,16 +6,18 @@
   - You are about to alter the column `status` on the `Teste` table. The data in that column could be lost. The data in that column will be cast from `VarChar(191)` to `Enum(EnumId(3))`.
 
 */
--- AlterTable
-ALTER TABLE `CheckTemplate` ADD COLUMN IF NOT EXISTS `tipoCampo` ENUM('status', 'texto', 'numero', 'temperatura') NOT NULL DEFAULT 'status',
-    ADD COLUMN IF NOT EXISTS `unidade` VARCHAR(191) NULL,
-    ADD COLUMN IF NOT EXISTS `valorMaximo` DOUBLE NULL,
-    ADD COLUMN IF NOT EXISTS `valorMinimo` DOUBLE NULL;
--- AlterTable
-ALTER TABLE `Parada` ADD COLUMN IF NOT EXISTS `areasConfig` JSON NULL,
-    MODIFY `status` ENUM('em_andamento', 'concluida', 'cancelada') NOT NULL DEFAULT 'em_andamento',
-    MODIFY `tipo` ENUM('preventiva', 'corretiva', 'emergencial') NOT NULL,
-    ALTER COLUMN `updatedAt` DROP DEFAULT;
+-- AlterTable (conditional add columns for compatibility)
+SET @__cnt := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='CheckTemplate' AND COLUMN_NAME='tipoCampo');
+SET @__sql := IF(@__cnt = 0,
+    'ALTER TABLE `CheckTemplate` ADD COLUMN `tipoCampo` ENUM(\'status\', \'texto\', \'numero\', \'temperatura\') NOT NULL DEFAULT \'status\', ADD COLUMN `unidade` VARCHAR(191) NULL, ADD COLUMN `valorMaximo` DOUBLE NULL, ADD COLUMN `valorMinimo` DOUBLE NULL;',
+    'SELECT 1;');
+PREPARE __stmt FROM @__sql; EXECUTE __stmt; DEALLOCATE PREPARE __stmt;
+-- AlterTable (conditional add column areasConfig)
+SET @__cnt := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='Parada' AND COLUMN_NAME='areasConfig');
+SET @__sql := IF(@__cnt = 0,
+    'ALTER TABLE `Parada` ADD COLUMN `areasConfig` JSON NULL, MODIFY `status` ENUM(\'em_andamento\', \'concluida\', \'cancelada\') NOT NULL DEFAULT \'em_andamento\', MODIFY `tipo` ENUM(\'preventiva\', \'corretiva\', \'emergencial\') NOT NULL, ALTER COLUMN `updatedAt` DROP DEFAULT;',
+    'ALTER TABLE `Parada` MODIFY `status` ENUM(\'em_andamento\', \'concluida\', \'cancelada\') NOT NULL DEFAULT \'em_andamento\', MODIFY `tipo` ENUM(\'preventiva\', \'corretiva\', \'emergencial\') NOT NULL, ALTER COLUMN `updatedAt` DROP DEFAULT;');
+PREPARE __stmt FROM @__sql; EXECUTE __stmt; DEALLOCATE PREPARE __stmt;
     ADD COLUMN `unidade` VARCHAR(191) NULL,
     ADD COLUMN `valorMaximo` DOUBLE NULL,
     ADD COLUMN `valorMinimo` DOUBLE NULL;
@@ -29,15 +31,12 @@ ALTER TABLE `Parada` ADD COLUMN `areasConfig` JSON NULL,
     MODIFY `tipo` ENUM('preventiva', 'corretiva', 'emergencial') NOT NULL,
     ALTER COLUMN `updatedAt` DROP DEFAULT;
 
--- AlterTable
-ALTER TABLE `Teste` ADD COLUMN IF NOT EXISTS `checkTemplateId` INTEGER NULL,
-    ADD COLUMN IF NOT EXISTS `evidenciaImagem` LONGTEXT NULL,
-    ADD COLUMN IF NOT EXISTS `resolucaoImagem` LONGTEXT NULL,
-    ADD COLUMN IF NOT EXISTS `resolucaoTexto` VARCHAR(191) NULL,
-    MODIFY `status` ENUM('pendente', 'ok', 'problema', 'nao_aplica') NOT NULL DEFAULT 'pendente',
-    MODIFY `observacoes` VARCHAR(191) NULL,
-    MODIFY `problemaDescricao` VARCHAR(191) NULL,
-    ALTER COLUMN `updatedAt` DROP DEFAULT;
+-- AlterTable (conditional add columns for Teste)
+SET @__cnt := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='Teste' AND COLUMN_NAME='checkTemplateId');
+SET @__sql := IF(@__cnt = 0,
+    'ALTER TABLE `Teste` ADD COLUMN `checkTemplateId` INTEGER NULL, ADD COLUMN `evidenciaImagem` LONGTEXT NULL, ADD COLUMN `resolucaoImagem` LONGTEXT NULL, ADD COLUMN `resolucaoTexto` VARCHAR(191) NULL, MODIFY `status` ENUM(\'pendente\', \'ok\', \'problema\', \'nao_aplica\') NOT NULL DEFAULT \'pendente\', MODIFY `observacoes` VARCHAR(191) NULL, MODIFY `problemaDescricao` VARCHAR(191) NULL, ALTER COLUMN `updatedAt` DROP DEFAULT;',
+    'ALTER TABLE `Teste` MODIFY `status` ENUM(\'pendente\', \'ok\', \'problema\', \'nao_aplica\') NOT NULL DEFAULT \'pendente\', MODIFY `observacoes` VARCHAR(191) NULL, MODIFY `problemaDescricao` VARCHAR(191) NULL, ALTER COLUMN `updatedAt` DROP DEFAULT;');
+PREPARE __stmt FROM @__sql; EXECUTE __stmt; DEALLOCATE PREPARE __stmt;
 
 -- AlterTable
 ALTER TABLE `User` ALTER COLUMN `updatedAt` DROP DEFAULT;
