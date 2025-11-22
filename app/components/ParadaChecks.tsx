@@ -349,12 +349,25 @@ export default function ParadaChecks({ testes }: Props) {
     };
   }, [localTestes, page]);
 
-  if (!localTestes.length) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        Nenhum check configurado ainda.
-      </p>
-    );
+    if (!localTestes.length) {
+    return {
+      grupos: [] as {
+        areaNome: string;
+        equipamentos: {
+          equipamento: Equipamento;
+          testes: LocalTesteState[];
+        }[];
+      }[],
+      totalEquipamentos: 0,
+      totalPages: 1,
+      currentPage: 1,
+      start: 0,
+      countVisible: 0,
+      statsByArea: {} as Record<
+        string,
+        { total: number; resolved: number; equipamentosIds: Set<number> }
+      >,
+    } as any;
   }
 
   return (
