@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
@@ -41,127 +41,172 @@ enum CheckTemplateTipoCampo {
 }
 
 model Area {
-  id        Int           @id @default(autoincrement())
-  nome      String
-  descricao String?
-  ativo     Boolean       @default(true)
+  id           Int           @id @default(autoincrement())
+  nome         String
+  descricao    String?
+  ativo        Boolean       @default(true)
   equipamentos Equipamento[]
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  paradaAreas  ParadaArea[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model Equipamento {
-  id          Int        @id @default(autoincrement())
-  nome        String
-  tag         String     @unique
-  descricao   String?
-  ativo       Boolean    @default(true)
-  area        Area       @relation(fields: [areaId], references: [id])
-  areaId      Int
-  tipo        TipoEquipamento? @relation(fields: [tipoId], references: [id])
-  tipoId      Int?
-  testes      Teste[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id               Int               @id @default(autoincrement())
+  nome             String
+  tag              String            @unique
+  descricao        String?
+  ativo            Boolean           @default(true)
+  area             Area              @relation(fields: [areaId], references: [id])
+  areaId           Int
+  tipo             TipoEquipamento?  @relation(fields: [tipoId], references: [id])
+  tipoId           Int?
+  testes           Teste[]
+  paradaAreaEquips ParadaAreaEquip[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model TipoEquipamento {
-  id        Int      @id @default(autoincrement())
-  nome      String   @unique
-  descricao String?
-  ativo     Boolean  @default(true)
-  equipamentos Equipamento[]
+  id             Int             @id @default(autoincrement())
+  nome           String          @unique
+  descricao      String?
+  ativo          Boolean         @default(true)
+  equipamentos   Equipamento[]
   checkTemplates CheckTemplate[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model CheckTemplate {
-  id          Int      @id @default(autoincrement())
-  tipo        TipoEquipamento @relation(fields: [tipoId], references: [id])
+  id          Int                    @id @default(autoincrement())
+  tipo        TipoEquipamento        @relation(fields: [tipoId], references: [id])
   tipoId      Int
   nome        String
   descricao   String?
   ordem       Int?
-  obrigatorio Boolean  @default(true)
+  obrigatorio Boolean                @default(true)
   tipoCampo   CheckTemplateTipoCampo @default(status)
   unidade     String?
   valorMinimo Float?
   valorMaximo Float?
   testes      Teste[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
 }
 
 model Parada {
-  id                    Int          @id @default(autoincrement())
-  macro                 String?
-  nome                  String
-  descricao             String?
-  equipeResponsavel     String?
-  dataInicio            DateTime?
-  dataFim               DateTime?
-  duracaoPrevistaHoras  Int?
-  status                ParadaStatus @default(em_andamento)
-  tipo                  ParadaTipo
-  testes                Teste[]
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
+  id                   Int          @id @default(autoincrement())
+  macro                String?
+  nome                 String
+  descricao            String?
+  // configuração por área: array de objetos { areaId, equipamentosSelecionados, responsavel, membros }
+  areasConfig          Json?
+  paradaAreas          ParadaArea[]
+  equipeResponsavel    String?
+  dataInicio           DateTime?
+  dataFim              DateTime?
+  duracaoPrevistaHoras Int?
+  status               ParadaStatus @default(em_andamento)
+  tipo                 ParadaTipo
+  testes               Teste[]
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+}
+
+model ParadaArea {
+  id               Int                @id @default(autoincrement())
+  parada           Parada             @relation(fields: [paradaId], references: [id], onDelete: Cascade)
+  paradaId         Int
+  area             Area               @relation(fields: [areaId], references: [id])
+  areaId           Int
+  responsavelId    Int?
+  responsavel      User?              @relation(fields: [responsavelId], references: [id])
+  responsavelNome  String?
+  equipeHabilitada Boolean            @default(false)
+  membros          ParadaAreaMember[]
+  equipamentos     ParadaAreaEquip[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@unique([paradaId, areaId])
+  @@index([paradaId])
+  @@index([areaId])
+}
+
+model ParadaAreaMember {
+  id           Int        @id @default(autoincrement())
+  paradaArea   ParadaArea @relation(fields: [paradaAreaId], references: [id], onDelete: Cascade)
+  paradaAreaId Int
+  nome         String
+  setor        String?
+  createdAt    DateTime   @default(now())
+}
+
+model ParadaAreaEquip {
+  id            Int         @id @default(autoincrement())
+  paradaArea    ParadaArea  @relation(fields: [paradaAreaId], references: [id], onDelete: Cascade)
+  paradaAreaId  Int
+  equipamento   Equipamento @relation(fields: [equipamentoId], references: [id])
+  equipamentoId Int
+
+  @@unique([paradaAreaId, equipamentoId])
 }
 
 model Teste {
-  id                 Int         @id @default(autoincrement())
-  parada             Parada      @relation(fields: [paradaId], references: [id])
-  paradaId           Int
-  equipamento        Equipamento @relation(fields: [equipamentoId], references: [id])
-  equipamentoId      Int
-  checkTemplate      CheckTemplate? @relation(fields: [checkTemplateId], references: [id])
-  checkTemplateId    Int?
-  status             TesteStatus @default(pendente)
-  observacoes        String?
-  problemaDescricao  String?
-  evidenciaImagem    String?     @db.LongText
-  resolucaoTexto     String?
-  resolucaoImagem    String?     @db.LongText
-  dataTeste          DateTime?
-  testadoPor         String?
-  naoAplica          Boolean     @default(false)
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  id                Int            @id @default(autoincrement())
+  parada            Parada         @relation(fields: [paradaId], references: [id])
+  paradaId          Int
+  equipamento       Equipamento    @relation(fields: [equipamentoId], references: [id])
+  equipamentoId     Int
+  checkTemplate     CheckTemplate? @relation(fields: [checkTemplateId], references: [id])
+  checkTemplateId   Int?
+  status            TesteStatus    @default(pendente)
+  observacoes       String?
+  problemaDescricao String?
+  evidenciaImagem   String?        @db.LongText
+  resolucaoTexto    String?
+  resolucaoImagem   String?        @db.LongText
+  dataTeste         DateTime?
+  testadoPor        String?
+  naoAplica         Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 }
 
 model User {
-  id          Int       @id @default(autoincrement())
-  name        String
-  email       String    @unique
-  password    String
-  username    String?   @unique
-  role        String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  emailVerified DateTime?
-  image String? @db.LongText
-  accounts Account[]
-  sessions Session[]
+  id                     Int          @id @default(autoincrement())
+  name                   String
+  email                  String       @unique
+  password               String
+  username               String?      @unique
+  role                   String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  emailVerified          DateTime?
+  image                  String?      @db.LongText
+  accounts               Account[]
+  sessions               Session[]
+  paradaAreasResponsavel ParadaArea[]
 }
 
 model Account {
-  id                 Int       @id @default(autoincrement())
+  id                 Int      @id @default(autoincrement())
   userId             Int
   type               String
   provider           String
   providerAccountId  String
-  refresh_token      String?   @db.Text
-  access_token       String?   @db.Text
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
   expires_at         Int?
   token_type         String?
   scope              String?
-  id_token           String?   @db.Text
+  id_token           String?  @db.Text
   session_state      String?
   oauth_token_secret String?
   oauth_token        String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -179,7 +224,7 @@ model Session {
 
 model VerificationToken {
   identifier String
-  token      String @unique
+  token      String   @unique
   expires    DateTime
 
   @@id([identifier, token])

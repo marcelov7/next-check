@@ -28,9 +28,24 @@ export async function POST(
           .filter((n: number) => !Number.isNaN(n))
       : [];
 
+    const areasPayload: any[] | undefined = Array.isArray(body.areas)
+      ? body.areas.map((a: any) => ({
+          areaId: Number(a.areaId),
+          equipamentosSelecionados: Array.isArray(a.equipamentosSelecionados)
+            ? a.equipamentosSelecionados.map((v: unknown) => Number(v)).filter((n: number) => !Number.isNaN(n))
+            : [],
+          responsavel: a.responsavel ? String(a.responsavel) : "",
+          membros: Array.isArray(a.membros) ? a.membros : [],
+        }))
+      : undefined;
+
     if (!equipamentosIds.length) {
       // se nenhuma seleção, apenas remove testes da parada
       await prisma.teste.deleteMany({ where: { paradaId } });
+      // também limpa configuração por área se enviada vazia
+      if (areasPayload) {
+        await prisma.parada.update({ where: { id: paradaId }, data: { areasConfig: [] } });
+      }
       return NextResponse.json({ created: 0, removed: "all" });
     }
 
@@ -94,6 +109,72 @@ export async function POST(
           checkTemplateId: t.checkTemplateId,
         })),
       });
+    }
+
+    // persistir configuração por área (normalizada) se enviada
+    if (areasPayload) {
+      const missing = areasPayload.filter((a) => a.equipamentosSelecionados && a.equipamentosSelecionados.length > 0 && (!a.responsavel || !String(a.responsavel).trim()));
+      if (missing.length) {
+        return NextResponse.json({ error: "Defina um responsável para cada área selecionada." }, { status: 400 });
+      }
+      try {
+        for (const a of areasPayload) {
+          const areaId = Number(a.areaId);
+          if (Number.isNaN(areaId)) continue;
+
+          // procurar existente
+          const existing = await prisma.paradaArea.findFirst({ where: { paradaId, areaId } });
+
+          if (existing) {
+            // atualizar ParadaArea
+            await prisma.paradaArea.update({
+              where: { id: existing.id },
+              data: {
+                responsavelNome: a.responsavel ?? null,
+                equipeHabilitada: !!(a.membros && a.membros.length),
+                updatedAt: new Date(),
+              },
+            });
+
+            // members: delete old and insert new
+            await prisma.paradaAreaMember.deleteMany({ where: { paradaAreaId: existing.id } });
+            if (Array.isArray(a.membros) && a.membros.length) {
+              const membersData = a.membros.map((m: any) => ({ paradaAreaId: existing.id, nome: m.nome ?? "", setor: m.setor ?? null }));
+              await prisma.paradaAreaMember.createMany({ data: membersData });
+            }
+
+            // equipamentos: sync
+            await prisma.paradaAreaEquip.deleteMany({ where: { paradaAreaId: existing.id } });
+            if (Array.isArray(a.equipamentosSelecionados) && a.equipamentosSelecionados.length) {
+              const eqData = a.equipamentosSelecionados.map((eid: number) => ({ paradaAreaId: existing.id, equipamentoId: Number(eid) }));
+              await prisma.paradaAreaEquip.createMany({ data: eqData });
+            }
+          } else {
+            // criar novo ParadaArea com membros e equipamentos relacionados
+            await prisma.paradaArea.create({
+              data: {
+                paradaId,
+                areaId,
+                responsavelNome: a.responsavel ?? null,
+                equipeHabilitada: !!(a.membros && a.membros.length),
+                membros: Array.isArray(a.membros)
+                  ? { create: a.membros.map((m: any) => ({ nome: m.nome ?? "", setor: m.setor ?? null })) }
+                  : undefined,
+                equipamentos: Array.isArray(a.equipamentosSelecionados)
+                  ? { create: a.equipamentosSelecionados.map((eid: number) => ({ equipamentoId: Number(eid) })) }
+                  : undefined,
+              },
+            });
+          }
+        }
+
+        // também manter snapshot no campo JSON para compatibilidade
+        await prisma.parada.update({ where: { id: paradaId }, data: { areasConfig: areasPayload } });
+      } catch (e) {
+        // se as tabelas normalizadas não existirem ou ocorrer algum erro, regride para salvar apenas o JSON
+        console.warn('Falha ao persistir em tabelas normalizadas, salvando snapshot JSON. Erro:', e);
+        await prisma.parada.update({ where: { id: paradaId }, data: { areasConfig: areasPayload } });
+      }
     }
 
     return NextResponse.json({ created: toCreate.length });

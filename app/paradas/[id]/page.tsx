@@ -10,22 +10,51 @@ export const dynamic = "force-dynamic";
 
 export default async function ParadaDetalhesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const parada = await prisma.parada.findUnique({
-    where: { id: Number(id) },
-    include: {
-      testes: {
-        include: {
-          equipamento: {
-            include: {
-              area: true,
-              tipo: true,
+  let parada: any = null;
+  try {
+    parada = await prisma.parada.findUnique({
+      where: { id: Number(id) },
+      include: {
+        testes: {
+          include: {
+            equipamento: {
+              include: {
+                area: true,
+                tipo: true,
+              },
             },
+            checkTemplate: true,
           },
-          checkTemplate: true,
+        },
+        paradaAreas: {
+          include: {
+            membros: true,
+            equipamentos: { include: { equipamento: true } },
+            area: true,
+          },
         },
       },
-    }
-  });
+    });
+  } catch (err) {
+    // fallback: provavelmente a tabela ParadaArea não existe no banco.
+    console.warn('Erro ao carregar parada com paradaAreas incluídas, tentando sem includes:', err);
+    parada = await prisma.parada.findUnique({
+      where: { id: Number(id) },
+      include: {
+        testes: {
+          include: {
+            equipamento: {
+              include: {
+                area: true,
+                tipo: true,
+              },
+            },
+            checkTemplate: true,
+          },
+        },
+      },
+    });
+  }
 
   if (!parada) notFound();
 
@@ -109,11 +138,40 @@ export default async function ParadaDetalhesPage({ params }: { params: Promise<{
                   <p className="mt-2 text-sm leading-relaxed">{parada.descricao}</p>
                 </div>
               )}
+              {/* Áreas e responsáveis (normalizado) */}
+              {(parada as any).paradaAreas && (parada as any).paradaAreas.length > 0 && (
+                <div className="mt-6 pt-6 border-t">
+                  <label className="text-xs font-medium text-muted-foreground uppercase">Áreas e responsáveis</label>
+                  <div className="mt-2 space-y-3">
+                    {((parada as any).paradaAreas as any[]).map((cfg: any) => {
+                      const areaName = cfg.area?.nome ?? cfg.areaId;
+                      return (
+                        <div key={cfg.id} className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">Área: {areaName}</div>
+                            <div className="text-sm text-muted-foreground">Responsável: {cfg.responsavelNome || '-'}</div>
+                            {cfg.membros && cfg.membros.length > 0 && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                Equipe: {cfg.membros.map((m: any) => m.nome).filter(Boolean).join(', ') || '-'}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </section>
 
             <section className="rounded-xl border bg-card p-6 shadow-sm">
               <h2 className="text-lg font-semibold mb-4">Checks da parada</h2>
-              <ParadaChecks paradaId={parada.id} testes={parada.testes as any} />
+              <ParadaChecks 
+                paradaId={parada.id} 
+                testes={(parada as any).testes as any} 
+                paradaAreas={(parada as any).paradaAreas ?? []} 
+                areasConfig={(parada as any).areasConfig ?? []}
+              />
             </section>
           </div>
 

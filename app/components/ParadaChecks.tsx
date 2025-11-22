@@ -52,6 +52,8 @@ type Teste = {
 type Props = {
   paradaId: number;
   testes: Teste[];
+  paradaAreas?: any[];
+  areasConfig?: any[];
 };
 
 type LocalTesteState = Teste & {
@@ -66,7 +68,7 @@ const isResolved = (teste: LocalTesteState) =>
   (teste.status === "problema" &&
     (!!teste.resolucaoTexto || !!teste.resolucaoImagem));
 
-export default function ParadaChecks({ testes }: Props) {
+export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props) {
   const [localTestes, setLocalTestes] = useState<LocalTesteState[]>(
     () => testes as LocalTesteState[]
   );
@@ -242,6 +244,7 @@ export default function ParadaChecks({ testes }: Props) {
     const porArea: Record<
       string,
       {
+        areaId: number | null;
         areaNome: string;
         porEquip: Record<
           number,
@@ -252,20 +255,23 @@ export default function ParadaChecks({ testes }: Props) {
 
     localTestes.forEach((teste) => {
       const areaNome = teste.equipamento.area?.nome ?? "Sem área";
-      if (!porArea[areaNome]) {
-        porArea[areaNome] = {
+      const areaId = teste.equipamento.area?.id ?? null;
+      const key = `${areaId ?? 'no-area'}_${areaNome}`;
+      if (!porArea[key]) {
+        porArea[key] = {
+          areaId,
           areaNome,
           porEquip: {},
         };
       }
       const equipId = teste.equipamento.id;
-      if (!porArea[areaNome].porEquip[equipId]) {
-        porArea[areaNome].porEquip[equipId] = {
+      if (!porArea[key].porEquip[equipId]) {
+        porArea[key].porEquip[equipId] = {
           equipamento: teste.equipamento,
           testes: [],
         };
       }
-      porArea[areaNome].porEquip[equipId].testes.push(teste);
+      porArea[key].porEquip[equipId].testes.push(teste);
     });
 
     const statsByArea: Record<
@@ -331,7 +337,10 @@ export default function ParadaChecks({ testes }: Props) {
 
     visibleRows.forEach((row) => {
       if (!areaGroup[row.areaNome]) {
+        // Encontrar o ID da área correspondente ao nome
+        const foundArea = Object.values(porArea).find(a => a.areaNome === row.areaNome);
         areaGroup[row.areaNome] = {
+          areaId: foundArea?.areaId ?? null,
           areaNome: row.areaNome,
           equipamentos: [],
         };
@@ -341,9 +350,8 @@ export default function ParadaChecks({ testes }: Props) {
         testes: row.testes,
       });
     });
-
-    return {
-      grupos: Object.values(areaGroup),
+      return {
+        grupos: Object.values(areaGroup).map((g) => ({ areaId: g.areaId, areaNome: g.areaNome, equipamentos: g.equipamentos })),
       totalEquipamentos,
       totalPages,
       currentPage,
@@ -352,6 +360,25 @@ export default function ParadaChecks({ testes }: Props) {
       statsByArea,
     };
   }, [localTestes, page]);
+
+    const paradaAreasMap = useMemo(() => {
+      const map: Record<number, any> = {};
+      if (!paradaAreas || !Array.isArray(paradaAreas)) return map;
+      paradaAreas.forEach((p) => {
+        if (p && typeof p.areaId === 'number') map[p.areaId] = p;
+      });
+      return map;
+    }, [paradaAreas]);
+
+  const areasConfigMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    if (!areasConfig || !Array.isArray(areasConfig)) return map;
+    areasConfig.forEach((a) => {
+      const key = a.areaNome ?? String(a.areaId ?? a.areaId);
+      map[key] = a;
+    });
+    return map;
+  }, [areasConfig]);
 
   if (!localTestes.length) {
     return (
@@ -363,7 +390,7 @@ export default function ParadaChecks({ testes }: Props) {
 
   return (
     <div className="space-y-4">
-      {pagination.grupos.map(({ areaNome, equipamentos }) => {
+      {pagination.grupos.map(({ areaId, areaNome, equipamentos }) => {
         const stats = pagination.statsByArea?.[areaNome];
         const totalChecks = stats?.total ?? 0;
         const resolvedChecks = stats?.resolved ?? 0;
@@ -741,6 +768,27 @@ export default function ParadaChecks({ testes }: Props) {
                 </ul>
               </div>
             ))}
+          </div>
+          {/* rodapé: responsável e equipe para a área, se disponível */}
+          <div className="mt-3 pt-3 border-t text-sm text-muted-foreground">
+            {(() => {
+              const cfg = areaId != null ? paradaAreasMap[areaId] : undefined;
+              if (!cfg) return <div>Responsável: -</div>;
+              return (
+                <div className="space-y-1">
+                  <div>
+                    <span className="font-medium">Responsável: </span>
+                    <span>{cfg.responsavelNome || cfg.responsavel || '-'}</span>
+                  </div>
+                  {cfg.membros && cfg.membros.length > 0 && (
+                    <div>
+                      <span className="font-medium">Equipe: </span>
+                      <span>{cfg.membros.map((m: any) => m.nome).filter(Boolean).join(', ') || '-'}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       );

@@ -146,6 +146,34 @@ export default function ParadaConfigurarPage() {
             membros: [],
           };
         });
+        // aplicar configuração salva (se existir) para preencher responsáveis e membros
+        const savedAreas = paradaData.areasConfig ?? [];
+        if (Array.isArray(savedAreas) && savedAreas.length) {
+          (savedAreas as any[]).forEach((saved) => {
+            const areaId = Number(saved.areaId);
+            if (!initialConfig[areaId]) return;
+            const equipsDaArea = (equipsData as Equipamento[]).filter(
+              (eq) => eq.areaId === areaId && eq.ativo
+            );
+            const selecionadosFromSaved: number[] = Array.isArray(saved.equipamentosSelecionados)
+              ? saved.equipamentosSelecionados.map((v: any) => Number(v)).filter((n: number) => !Number.isNaN(n))
+              : initialConfig[areaId].equipamentosSelecionados;
+
+            const selecionarTodosEquip =
+              selecionadosFromSaved.length > 0 && selecionadosFromSaved.length === equipsDaArea.length;
+
+            initialConfig[areaId] = {
+              ...initialConfig[areaId],
+              equipamentosSelecionados: selecionadosFromSaved,
+              selecionarTodosEquip,
+              selecionada: selecionadosFromSaved.length > 0,
+              responsavel: saved.responsavel ?? initialConfig[areaId].responsavel,
+              membros: Array.isArray(saved.membros) ? saved.membros : initialConfig[areaId].membros,
+              equipeHabilitada: Array.isArray(saved.membros) ? saved.membros.length > 0 : initialConfig[areaId].equipeHabilitada,
+            };
+          });
+        }
+
         setConfigPorArea(initialConfig);
       } catch (err) {
         console.error(err);
@@ -384,16 +412,34 @@ export default function ParadaConfigurarPage() {
       setError("Selecione pelo menos uma área/equipamento para continuar.");
       return;
     }
+    // validar responsável por área
+    const faltandoResponsavel = areasSelecionadas.filter(
+      (a) => !(configPorArea[a.id]?.responsavel ?? "").trim()
+    );
+
+    if (faltandoResponsavel.length) {
+      setError("Defina um responsável para cada área selecionada.");
+      return;
+    }
+
     setError(null);
     setSuccessMessage(null);
     setSaving(true);
     try {
       const equipamentosIds = equipamentosSelecionados.map((e) => e.id);
 
+      const areas = areasSelecionadas.map((a) => ({
+        areaId: a.id,
+        areaNome: a.nome,
+        equipamentosSelecionados: configPorArea[a.id]?.equipamentosSelecionados ?? [],
+        responsavel: configPorArea[a.id]?.responsavel ?? "",
+        membros: configPorArea[a.id]?.membros ?? [],
+      }));
+
       await fetch(`/api/paradas/${paradaId}/configuracao`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ equipamentos: equipamentosIds }),
+        body: JSON.stringify({ equipamentos: equipamentosIds, areas }),
       });
 
       setShowTemplates(true);
