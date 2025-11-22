@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import type { Session } from "next-auth";
 import authOptions from "@/lib/nextAuthOptions";
 import { prisma } from "@/lib/prisma";
 
@@ -8,7 +9,7 @@ type RouteContext = {
 };
 
 export async function PUT(req: NextRequest, { params }: RouteContext) {
-  const session = await getServerSession(authOptions as any);
+  const session = (await getServerSession(authOptions as any)) as Session | null;
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
