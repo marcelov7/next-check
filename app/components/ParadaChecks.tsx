@@ -223,6 +223,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     if (!localTestes.length) {
       return {
         grupos: [] as {
+          areaId: number | null;
           areaNome: string;
           equipamentos: {
             equipamento: Equipamento;
