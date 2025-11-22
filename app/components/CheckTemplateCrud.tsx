@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/app/components/ui/dialog";
 import { Button } from "@/app/components/ui/button";
+import { Edit3, List, Hash, Thermometer, FileText, CheckSquare } from "lucide-react";
 
 type Tipo = { id: number; nome: string };
 type Template = {
@@ -334,17 +335,23 @@ export default function CheckTemplateCrud() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">
-                    Nome do check
+                    <span className="flex items-center gap-2">
+                      <Edit3 className="h-4 w-4 text-muted-foreground" />
+                      <span>Nome do check</span>
+                    </span>
                   </label>
                   <input
                     value={editNome}
                     onChange={(e) => setEditNome(e.target.value)}
-                    className="w-full rounded-md border px-3 py-2 text-sm"
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">
-                    Tipo do campo
+                    <span className="flex items-center gap-2">
+                      <List className="h-4 w-4 text-muted-foreground" />
+                      <span>Tipo do campo</span>
+                    </span>
                   </label>
                   <select
                     value={editTipoCampo}
@@ -353,7 +360,7 @@ export default function CheckTemplateCrud() {
                         e.target.value as Template["tipoCampo"]
                       )
                     }
-                    className="w-full rounded-md border px-3 py-2 text-sm"
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
                     <option value="status">
                       Status (OK / Problema / N/A)
@@ -368,12 +375,15 @@ export default function CheckTemplateCrud() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">
-                    Ordem
+                    <span className="flex items-center gap-2">
+                      <Hash className="h-4 w-4 text-muted-foreground" />
+                      <span>Ordem</span>
+                    </span>
                   </label>
                   <input
                     value={editOrdem}
                     onChange={(e) => setEditOrdem(e.target.value)}
-                    className="w-full rounded-md border px-3 py-2 text-sm"
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     placeholder="Opcional"
                   />
                 </div>
@@ -382,12 +392,15 @@ export default function CheckTemplateCrud() {
                   <>
                     <div>
                       <label className="text-xs font-medium text-muted-foreground">
-                        Unidade
+                        <span className="flex items-center gap-2">
+                          <Thermometer className="h-4 w-4 text-muted-foreground" />
+                          <span>Unidade</span>
+                        </span>
                       </label>
                       <input
                         value={editUnidade}
                         onChange={(e) => setEditUnidade(e.target.value)}
-                        className="w-full rounded-md border px-3 py-2 text-sm"
+                        className="w-full rounded-lg border bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                         placeholder={
                           editTipoCampo === "temperatura"
                             ? "°C"
@@ -423,19 +436,26 @@ export default function CheckTemplateCrud() {
                     type="checkbox"
                     checked={editObrigatorio}
                     onChange={(e) => setEditObrigatorio(e.target.checked)}
+                    className="accent-primary"
                   />
-                  Obrigatório
+                  <span className="flex items-center gap-2">
+                    <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                    <span>Obrigatório</span>
+                  </span>
                 </label>
               </div>
 
               <div>
                 <label className="text-xs font-medium text-muted-foreground">
-                  Descrição
+                  <span className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span>Descrição</span>
+                  </span>
                 </label>
                 <textarea
                   value={editDescricao}
                   onChange={(e) => setEditDescricao(e.target.value)}
-                  className="w-full rounded-md border px-3 py-2 text-sm min-h-[80px]"
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm min-h-[80px] shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
             </div>
