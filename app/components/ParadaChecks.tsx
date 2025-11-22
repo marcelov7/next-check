@@ -327,6 +327,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     const areaGroup: Record<
       string,
       {
+        areaId: number | null;
         areaNome: string;
         equipamentos: {
           equipamento: Equipamento;
