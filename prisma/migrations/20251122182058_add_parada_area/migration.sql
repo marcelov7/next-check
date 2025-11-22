@@ -7,15 +7,15 @@
 
 */
 -- AlterTable
-ALTER TABLE `Account` MODIFY `oauth_token_secret` VARCHAR(191) NULL,
-    MODIFY `oauth_token` VARCHAR(191) NULL,
+ALTER TABLE `CheckTemplate` ADD COLUMN IF NOT EXISTS `tipoCampo` ENUM('status', 'texto', 'numero', 'temperatura') NOT NULL DEFAULT 'status',
+    ADD COLUMN IF NOT EXISTS `unidade` VARCHAR(191) NULL,
+    ADD COLUMN IF NOT EXISTS `valorMaximo` DOUBLE NULL,
+    ADD COLUMN IF NOT EXISTS `valorMinimo` DOUBLE NULL;
+-- AlterTable
+ALTER TABLE `Parada` ADD COLUMN IF NOT EXISTS `areasConfig` JSON NULL,
+    MODIFY `status` ENUM('em_andamento', 'concluida', 'cancelada') NOT NULL DEFAULT 'em_andamento',
+    MODIFY `tipo` ENUM('preventiva', 'corretiva', 'emergencial') NOT NULL,
     ALTER COLUMN `updatedAt` DROP DEFAULT;
-
--- AlterTable
-ALTER TABLE `Area` ALTER COLUMN `updatedAt` DROP DEFAULT;
-
--- AlterTable
-ALTER TABLE `CheckTemplate` ADD COLUMN `tipoCampo` ENUM('status', 'texto', 'numero', 'temperatura') NOT NULL DEFAULT 'status',
     ADD COLUMN `unidade` VARCHAR(191) NULL,
     ADD COLUMN `valorMaximo` DOUBLE NULL,
     ADD COLUMN `valorMinimo` DOUBLE NULL;
@@ -30,10 +30,10 @@ ALTER TABLE `Parada` ADD COLUMN `areasConfig` JSON NULL,
     ALTER COLUMN `updatedAt` DROP DEFAULT;
 
 -- AlterTable
-ALTER TABLE `Teste` ADD COLUMN `checkTemplateId` INTEGER NULL,
-    ADD COLUMN `evidenciaImagem` LONGTEXT NULL,
-    ADD COLUMN `resolucaoImagem` LONGTEXT NULL,
-    ADD COLUMN `resolucaoTexto` VARCHAR(191) NULL,
+ALTER TABLE `Teste` ADD COLUMN IF NOT EXISTS `checkTemplateId` INTEGER NULL,
+    ADD COLUMN IF NOT EXISTS `evidenciaImagem` LONGTEXT NULL,
+    ADD COLUMN IF NOT EXISTS `resolucaoImagem` LONGTEXT NULL,
+    ADD COLUMN IF NOT EXISTS `resolucaoTexto` VARCHAR(191) NULL,
     MODIFY `status` ENUM('pendente', 'ok', 'problema', 'nao_aplica') NOT NULL DEFAULT 'pendente',
     MODIFY `observacoes` VARCHAR(191) NULL,
     MODIFY `problemaDescricao` VARCHAR(191) NULL,
