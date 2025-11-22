@@ -115,6 +115,9 @@ model Teste {
   status             TesteStatus @default(pendente)
   observacoes        String?
   problemaDescricao  String?
+  evidenciaImagem    String?
+  resolucaoTexto     String?
+  resolucaoImagem    String?
   dataTeste          DateTime?
   testadoPor         String?
   naoAplica          Boolean     @default(false)

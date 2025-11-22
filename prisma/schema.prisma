@@ -120,6 +120,9 @@ model Teste {
   status             TesteStatus @default(pendente)
   observacoes        String?
   problemaDescricao  String?
+  evidenciaImagem    String?     @db.LongText
+  resolucaoTexto     String?
+  resolucaoImagem    String?     @db.LongText
   dataTeste          DateTime?
   testadoPor         String?
   naoAplica          Boolean     @default(false)
