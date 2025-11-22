@@ -23,7 +23,9 @@ export async function POST(
   try {
     const body = await req.json();
     const equipamentosIds: number[] = Array.isArray(body.equipamentos)
-      ? body.equipamentos.map((v: unknown) => Number(v)).filter((n) => !Number.isNaN(n))
+      ? body.equipamentos
+          .map((v: unknown) => Number(v))
+          .filter((n: number) => !Number.isNaN(n))
       : [];
 
     if (!equipamentosIds.length) {
