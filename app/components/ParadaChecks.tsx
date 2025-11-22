@@ -232,6 +232,10 @@ export default function ParadaChecks({ testes }: Props) {
         currentPage: 1,
         start: 0,
         countVisible: 0,
+        statsByArea: {} as Record<
+          string,
+          { total: number; resolved: number; equipamentosIds: Set<number> }
+        >,
       };
     }
 
@@ -360,7 +364,7 @@ export default function ParadaChecks({ testes }: Props) {
   return (
     <div className="space-y-4">
       {pagination.grupos.map(({ areaNome, equipamentos }) => {
-        const stats = pagination.statsByArea[areaNome];
+        const stats = pagination.statsByArea?.[areaNome];
         const totalChecks = stats?.total ?? 0;
         const resolvedChecks = stats?.resolved ?? 0;
         const equipamentosCount = stats
