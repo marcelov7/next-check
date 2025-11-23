@@ -61,7 +61,7 @@ type LocalTesteState = Teste & {
   error?: string | null;
 };
 
-const DEFAULT_PAGE_SIZE = 5;
+const PAGE_SIZE = 5;
 
 const isResolved = (teste: LocalTesteState) =>
   teste.status === "ok" ||
@@ -73,7 +73,6 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     () => testes as LocalTesteState[]
   );
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [previewImage, setPreviewImage] = useState<{
     src: string;
     alt: string;
@@ -318,10 +317,13 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     });
 
     const totalEquipamentos = rows.length;
-    const totalPages = Math.max(1, Math.ceil(totalEquipamentos / pageSize));
+    const totalPages = Math.max(
+      1,
+      Math.ceil(totalEquipamentos / PAGE_SIZE)
+    );
     const currentPage = Math.min(page, totalPages);
-    const start = (currentPage - 1) * pageSize;
-    const visibleRows = rows.slice(start, start + pageSize);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const visibleRows = rows.slice(start, start + PAGE_SIZE);
 
     const areaGroup: Record<
       string,
@@ -359,7 +361,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       countVisible: visibleRows.length,
       statsByArea,
     };
-  }, [localTestes, page, pageSize]);
+  }, [localTestes, page]);
 
     const paradaAreasMap = useMemo(() => {
       const map: Record<number, any> = {};
@@ -794,7 +796,42 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       );
       })}
 
-      {/* Paginação removida temporariamente para corrigir erro de parsing. */}
+      {pagination.totalEquipamentos > PAGE_SIZE && (
+        <div className="flex items-center justify-between pt-2 border-t mt-2 text-xs">
+          <span className="text-muted-foreground">
+            Mostrando equipamentos {pagination.start + 1}-
+            {pagination.start + pagination.countVisible} de{" "}
+            {pagination.totalEquipamentos}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.currentPage === 1}
+              onClick={() =>
+                setPage((p) => Math.max(1, p - 1))
+              }
+            >
+              Anterior
+            </Button>
+            <span className="text-muted-foreground">
+              Página {pagination.currentPage} de {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.currentPage === pagination.totalPages}
+              onClick={() =>
+                setPage((p) =>
+                  Math.min(pagination.totalPages, p + 1)
+                )
+              }
+            >
+              Próxima
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog
         open={!!previewImage}
