@@ -81,19 +81,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     src: string;
     alt: string;
   } | null>(null);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  // show scroll-to-top button when user scrolls down
-  useMemo(() => {
-    if (typeof window === "undefined") return;
-    const onScroll = () => {
-      setShowScrollTop(window.scrollY > 200);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    // initialize
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll as any);
-  }, []);
+  const [showDebug, setShowDebug] = useState(false);
 
   const updateLocalTeste = (id: number, patch: Partial<LocalTesteState>) => {
     setLocalTestes((prev) =>
@@ -422,20 +410,27 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [localTestes]);
 
-  // log pagination in development only (no visible debug panel)
+  // debug: log pagination values to console for troubleshooting
   useMemo(() => {
-    if (process?.env?.NODE_ENV === "development") {
-      // eslint-disable-next-line no-console
-      console.debug && console.debug("[ParadaChecks] pagination:", {
-        totalEquipamentos: pagination?.totalEquipamentos,
-        totalPages: pagination?.totalPages,
-        currentPage: pagination?.currentPage,
-        start: pagination?.start,
-        countVisible: pagination?.countVisible,
-        pageSize,
-        localTestesLength: localTestes.length,
-      });
+    // only log in development or when dbg param is set in URL
+    try {
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("dbg") === "1") setShowDebug(true);
+      }
+    } catch (e) {
+      // ignore
     }
+    // eslint-disable-next-line no-console
+    console.debug && console.debug("[ParadaChecks] pagination:", {
+      totalEquipamentos: pagination?.totalEquipamentos,
+      totalPages: pagination?.totalPages,
+      currentPage: pagination?.currentPage,
+      start: pagination?.start,
+      countVisible: pagination?.countVisible,
+      pageSize,
+      localTestesLength: localTestes.length,
+    });
   }, [pagination, pageSize, localTestes.length]);
 
     
@@ -516,7 +511,27 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     </div>
   );
 
-  // debug panel removed; use dev console logs only
+  // Debug panel: visible when ?dbg=1 is present in URL
+  const DebugPanel = () => {
+    if (!showDebug) return null;
+    return (
+      <div className="fixed right-4 bottom-4 z-50 w-[360px] max-h-[50vh] overflow-auto rounded border bg-white/95 p-3 text-xs shadow-lg">
+        <div className="flex items-center justify-between mb-2">
+          <strong>ParadaChecks Debug</strong>
+          <button className="text-[11px] text-muted-foreground" onClick={() => setShowDebug(false)}>Fechar</button>
+        </div>
+        <pre className="whitespace-pre-wrap break-words text-[11px] text-slate-700">{JSON.stringify({
+          totalEquipamentos: pagination.totalEquipamentos,
+          totalPages: pagination.totalPages,
+          currentPage: pagination.currentPage,
+          start: pagination.start,
+          countVisible: pagination.countVisible,
+          pageSize,
+          localTestesLength: localTestes.length,
+        }, null, 2)}</pre>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -925,12 +940,13 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       );
       })}
 
-      <div className="flex flex-col md:flex-row md:items-center items-start justify-between pt-2 border-t mt-2 text-xs gap-2">
-        <span className="text-muted-foreground text-sm">
+      <div className="flex items-center justify-between pt-2 border-t mt-2 text-xs">
+        <span className="text-muted-foreground">
           Mostrando equipamentos {pagination.start + 1}-
-          {pagination.start + pagination.countVisible} de {pagination.totalEquipamentos}
+          {pagination.start + pagination.countVisible} de{" "}
+          {pagination.totalEquipamentos}
         </span>
-        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-2">
           <label className="text-[11px] text-muted-foreground">Mostrar</label>
           <select
             className="rounded-md border bg-background px-2 py-1 text-xs"
@@ -970,22 +986,6 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
           )}
         </div>
       </div>
-
-      {/* Scroll-to-top button */}
-      <button
-        type="button"
-        onClick={() => {
-          try {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          } catch (e) {
-            window.scrollTo(0, 0);
-          }
-        }}
-        aria-label="Subir ao topo"
-        className={`${showScrollTop ? "opacity-100" : "opacity-0 pointer-events-none"} transition-opacity fixed right-4 bottom-20 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white shadow-lg`}
-      >
-        ↑
-      </button>
 
       <Dialog
         open={!!previewImage}
