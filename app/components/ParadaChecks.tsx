@@ -74,6 +74,9 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
   );
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  const [filterResponsavel, setFilterResponsavel] = useState<string>("");
+  const [filterAreaId, setFilterAreaId] = useState<number | "all">("all");
+  const [filterEquipQuery, setFilterEquipQuery] = useState<string>("");
   const [previewImage, setPreviewImage] = useState<{
     src: string;
     alt: string;
@@ -221,6 +224,16 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     salvarTeste(teste.id, { [field]: null } as Partial<LocalTesteState>);
   };
 
+  // mapa de configuração das areas (usado também para filtrar por responsável)
+  const paradaAreasMap = useMemo(() => {
+    const map: Record<number, any> = {};
+    if (!paradaAreas || !Array.isArray(paradaAreas)) return map;
+    paradaAreas.forEach((p) => {
+      if (p && typeof p.areaId === "number") map[p.areaId] = p;
+    });
+    return map;
+  }, [paradaAreas]);
+
   const pagination = useMemo(() => {
     if (!localTestes.length) {
       return {
@@ -256,7 +269,31 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       }
     > = {};
 
-    localTestes.forEach((teste) => {
+    // aplicar filtros antes de agrupar
+    const filteredTestes = localTestes.filter((teste) => {
+      // filtro por área (select)
+      if (filterAreaId !== "all") {
+        const aid = teste.equipamento.area?.id ?? null;
+        if (aid !== filterAreaId) return false;
+      }
+      // filtro por equipamento (nome ou tag)
+      if (filterEquipQuery && filterEquipQuery.trim() !== "") {
+        const q = filterEquipQuery.toLowerCase();
+        const nome = (teste.equipamento.nome || "").toLowerCase();
+        const tag = (teste.equipamento.tag || "").toLowerCase();
+        if (!nome.includes(q) && !tag.includes(q)) return false;
+      }
+      // filtro por responsável de área (substring)
+      if (filterResponsavel && filterResponsavel.trim() !== "") {
+        const areaId = teste.equipamento.area?.id ?? null;
+        const cfg = areaId != null ? paradaAreasMap[areaId] : undefined;
+        const resp = (cfg?.responsavelNome || cfg?.responsavel || "").toLowerCase();
+        if (!resp.includes(filterResponsavel.toLowerCase())) return false;
+      }
+      return true;
+    });
+
+    filteredTestes.forEach((teste) => {
       const areaNome = teste.equipamento.area?.nome ?? "Sem área";
       const areaId = teste.equipamento.area?.id ?? null;
       const key = `${areaId ?? 'no-area'}_${areaNome}`;
@@ -360,7 +397,18 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       countVisible: visibleRows.length,
       statsByArea,
     };
-  }, [localTestes, page, pageSize]);
+  }, [localTestes, page, pageSize, filterResponsavel, filterAreaId, filterEquipQuery, paradaAreasMap]);
+  
+  // lista de areas disponível (para o select)
+  const areaOptions = useMemo(() => {
+    const map = new Map<number | null, string>();
+    localTestes.forEach((t) => {
+      const id = t.equipamento.area?.id ?? null;
+      const name = t.equipamento.area?.nome ?? "Sem área";
+      if (!map.has(id)) map.set(id, name);
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [localTestes]);
 
   // debug: log pagination values to console for troubleshooting
   useMemo(() => {
@@ -385,14 +433,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     });
   }, [pagination, pageSize, localTestes.length]);
 
-    const paradaAreasMap = useMemo(() => {
-      const map: Record<number, any> = {};
-      if (!paradaAreas || !Array.isArray(paradaAreas)) return map;
-      paradaAreas.forEach((p) => {
-        if (p && typeof p.areaId === 'number') map[p.areaId] = p;
-      });
-      return map;
-    }, [paradaAreas]);
+    
 
   const areasConfigMap = useMemo(() => {
     const map: Record<string, any> = {};
@@ -404,6 +445,9 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     return map;
   }, [areasConfig]);
 
+  // resetar pagina quando filtros mudam
+  const onFilterChange = () => setPage(1);
+
   if (!localTestes.length) {
     return (
       <p className="text-muted-foreground text-sm">
@@ -411,6 +455,61 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       </p>
     );
   }
+
+  // filtro UI
+  const FiltersBar = () => (
+    <div className="flex flex-wrap items-center gap-2 mb-3">
+      <input
+        placeholder="Filtrar por responsável da área"
+        className="rounded-md border bg-background px-2 py-1 text-xs"
+        value={filterResponsavel}
+        onChange={(e) => {
+          setFilterResponsavel(e.target.value);
+          onFilterChange();
+        }}
+      />
+
+      <select
+        className="rounded-md border bg-background px-2 py-1 text-xs"
+        value={filterAreaId === "all" ? "all" : String(filterAreaId)}
+        onChange={(e) => {
+          const v = e.target.value;
+          setFilterAreaId(v === "all" ? "all" : Number(v));
+          onFilterChange();
+        }}
+      >
+        <option value="all">Todas as áreas</option>
+        {areaOptions.map((a) => (
+          <option key={String(a.id)} value={a.id === null ? "null" : String(a.id)}>
+            {a.name}
+          </option>
+        ))}
+      </select>
+
+      <input
+        placeholder="Filtrar por equipamento (nome ou tag)"
+        className="rounded-md border bg-background px-2 py-1 text-xs"
+        value={filterEquipQuery}
+        onChange={(e) => {
+          setFilterEquipQuery(e.target.value);
+          onFilterChange();
+        }}
+      />
+
+      <button
+        type="button"
+        className="text-[12px] text-muted-foreground hover:underline"
+        onClick={() => {
+          setFilterResponsavel("");
+          setFilterAreaId("all");
+          setFilterEquipQuery("");
+          onFilterChange();
+        }}
+      >
+        Limpar filtros
+      </button>
+    </div>
+  );
 
   // Debug panel: visible when ?dbg=1 is present in URL
   const DebugPanel = () => {
@@ -436,6 +535,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
 
   return (
     <div className="space-y-4">
+      <FiltersBar />
       {pagination.grupos.map(({ areaId, areaNome, equipamentos }) => {
         const stats = pagination.statsByArea?.[areaNome];
         const totalChecks = stats?.total ?? 0;
