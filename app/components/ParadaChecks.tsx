@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Dialog, DialogContent } from "@/app/components/ui/dialog";
 
@@ -223,6 +224,301 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     updateLocalTeste(teste.id, { [field]: null } as unknown as LocalTesteState);
     salvarTeste(teste.id, { [field]: null } as Partial<LocalTesteState>);
   };
+
+  // refs para criar handlers estáveis e evitar re-renderings desnecessários
+  const localTestesRef = useRef(localTestes);
+  useEffect(() => {
+    localTestesRef.current = localTestes;
+  }, [localTestes]);
+
+  const salvarTesteRef = useRef(salvarTeste);
+  useEffect(() => {
+    salvarTesteRef.current = salvarTeste;
+  }, [salvarTeste]);
+
+  // Handlers estáveis que operam por id e usam refs para pegar estado/funcões atuais
+  const handleChangeStatusStable = useCallback((id: number, status: TesteStatus) => {
+    const cur = localTestesRef.current.find((t) => t.id === id);
+    if (!cur) return;
+    const novoStatus: TesteStatus = cur.status === status ? "pendente" : status;
+    setLocalTestes((prev) => prev.map((t) => (t.id === id ? { ...t, status: novoStatus } : t)));
+    salvarTesteRef.current?.(id, { status: novoStatus } as Partial<LocalTesteState>);
+  }, []);
+
+  const updateLocalObservacoes = useCallback((id: number, value: string) => {
+    setLocalTestes((prev) => prev.map((t) => (t.id === id ? { ...t, observacoes: value } : t)));
+  }, []);
+
+  const handleBlurObservacoesStable = useCallback((id: number) => {
+    const cur = localTestesRef.current.find((t) => t.id === id);
+    if (!cur) return;
+    salvarTesteRef.current?.(id, { observacoes: cur.observacoes ?? "" });
+  }, []);
+
+  const updateLocalProblema = useCallback((id: number, value: string) => {
+    setLocalTestes((prev) => prev.map((t) => (t.id === id ? { ...t, problemaDescricao: value } : t)));
+  }, []);
+
+  const handleBlurProblemaStable = useCallback((id: number) => {
+    const cur = localTestesRef.current.find((t) => t.id === id);
+    if (!cur) return;
+    salvarTesteRef.current?.(id, { problemaDescricao: cur.problemaDescricao ?? "" });
+  }, []);
+
+  const updateLocalResolucao = useCallback((id: number, value: string) => {
+    setLocalTestes((prev) => prev.map((t) => (t.id === id ? { ...t, resolucaoTexto: value } : t)));
+  }, []);
+
+  const handleBlurResolucaoStable = useCallback((id: number) => {
+    const cur = localTestesRef.current.find((t) => t.id === id);
+    if (!cur) return;
+    salvarTesteRef.current?.(id, { resolucaoTexto: cur.resolucaoTexto ?? "" });
+  }, []);
+
+  const handleBlurValorMedidoStable = useCallback((id: number, rawValue: string) => {
+    const teste = localTestesRef.current.find((t) => t.id === id);
+    if (!teste) return;
+
+    const value = rawValue.trim() === "" ? null : Number(rawValue.replace(",", "."));
+    const patch: Partial<LocalTesteState> = { observacoes: rawValue };
+
+    let status: TesteStatus | undefined;
+    if (value != null && !Number.isNaN(value) && teste.checkTemplate) {
+      const { valorMinimo, valorMaximo } = teste.checkTemplate;
+      const dentroFaixa = (valorMinimo == null || value >= valorMinimo) && (valorMaximo == null || value <= valorMaximo);
+      status = dentroFaixa ? "ok" : "problema";
+      patch.status = status;
+    }
+
+    setLocalTestes((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    const apiPatch: Partial<LocalTesteState> = { observacoes: rawValue };
+    if (status) apiPatch.status = status;
+    salvarTesteRef.current?.(id, apiPatch);
+  }, []);
+
+  const handleUploadImageStable = useCallback((id: number, field: "evidenciaImagem" | "resolucaoImagem", file?: File) => {
+    if (!file) return;
+    const maxSizeBytes = 3 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setLocalTestes((prev) => prev.map((t) => (t.id === id ? { ...t, error: "Imagem muito grande (máx. 3 MB)" } : t)));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      setLocalTestes((prev) => prev.map((t) => (t.id === id ? { ...t, [field]: dataUrl } as LocalTesteState : t)));
+      salvarTesteRef.current?.(id, { [field]: dataUrl } as Partial<LocalTesteState>);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleClearImageStable = useCallback((id: number, field: "evidenciaImagem" | "resolucaoImagem") => {
+    setLocalTestes((prev) => prev.map((t) => (t.id === id ? { ...t, [field]: null } as LocalTesteState : t)));
+    salvarTesteRef.current?.(id, { [field]: null } as Partial<LocalTesteState>);
+  }, []);
+
+  // estado para áreas colapsadas
+  const [collapsedAreas, setCollapsedAreas] = useState<Record<string, boolean>>({});
+  const toggleAreaCollapsed = (areaKey: string) => {
+    setCollapsedAreas((prev) => ({ ...prev, [areaKey]: !prev[areaKey] }));
+  };
+
+  // componente memoizado para cada teste (reduz rerenders que quebram digitação)
+  const TesteCard = useCallback(
+    React.memo(function TesteCardInner({ teste }: { teste: LocalTesteState }) {
+      return (
+        <li key={teste.id} className="flex flex-col gap-2 rounded-md border bg-card px-3 py-2 text-xs">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <div className="font-medium">
+                {teste.checkTemplate?.nome ?? `Check #${teste.id}`}
+              </div>
+              {teste.checkTemplate?.descricao && (
+                <div className="text-[11px] text-muted-foreground">
+                  {teste.checkTemplate.descricao}
+                </div>
+              )}
+              {teste.checkTemplate && (
+                <div className="text-[11px] text-muted-foreground mt-0.5">
+                  {teste.checkTemplate.tipoCampo === "status" &&
+                    "Tipo: Status (OK / Problema / N/A)"}
+                  {teste.checkTemplate.tipoCampo === "texto" &&
+                    "Tipo: Texto livre"}
+                  {teste.checkTemplate.tipoCampo === "numero" && (
+                    <>
+                      Tipo: Número
+                      {teste.checkTemplate.unidade
+                        ? ` · Unidade: ${teste.checkTemplate.unidade}`
+                        : ""}
+                      {teste.checkTemplate.valorMinimo != null
+                        ? ` · Mín: ${teste.checkTemplate.valorMinimo}`
+                        : ""}
+                      {teste.checkTemplate.valorMaximo != null
+                        ? ` · Máx: ${teste.checkTemplate.valorMaximo}`
+                        : ""}
+                    </>
+                  )}
+                  {teste.checkTemplate.tipoCampo === "temperatura" && (
+                    <>
+                      Tipo: Temperatura
+                      {teste.checkTemplate.unidade
+                        ? ` · Unidade: ${teste.checkTemplate.unidade}`
+                        : ""}
+                      {teste.checkTemplate.valorMinimo != null
+                        ? ` · Mín: ${teste.checkTemplate.valorMinimo}`
+                        : ""}
+                      {teste.checkTemplate.valorMaximo != null
+                        ? ` · Máx: ${teste.checkTemplate.valorMaximo}`
+                        : ""}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            {(!teste.checkTemplate || teste.checkTemplate?.tipoCampo === "status") && (
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-1">
+                  {(["ok", "problema", "nao_aplica"] as const).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => handleChangeStatusStable(teste.id, st)}
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold border ${(() => {
+                        const resolved = isResolved(teste);
+                        if (st === "ok") {
+                          return resolved
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                            : "bg-muted text-muted-foreground border-transparent";
+                        }
+                        if (st === "problema") {
+                          return teste.status === "problema" && !resolved
+                            ? "bg-red-50 text-red-700 border-red-300"
+                            : "bg-muted text-muted-foreground border-transparent";
+                        }
+                        return teste.status === "nao_aplica"
+                          ? "bg-slate-50 text-slate-700 border-slate-300"
+                          : "bg-muted text-muted-foreground border-transparent";
+                      })()}`}
+                    >
+                      {st === "ok" ? "OK" : st === "problema" ? "Problema" : "N/A"}
+                    </button>
+                  ))}
+                </div>
+                {teste.status !== "pendente" && (
+                  <button
+                    type="button"
+                    onClick={() => handleChangeStatusStable(teste.id, "pendente")}
+                    className="text-[10px] text-muted-foreground hover:underline"
+                  >
+                    Voltar para pendente
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {teste.checkTemplate?.tipoCampo === "texto" && (
+            <div className="space-y-1">
+              <label className="text-[11px] text-muted-foreground">Observações / resultado</label>
+              <textarea
+                className="w-full rounded-md border bg-background px-2 py-1 text-xs"
+                rows={2}
+                value={teste.observacoes ?? ""}
+                onChange={(e) => updateLocalObservacoes(teste.id, e.target.value)}
+                onBlur={() => handleBlurObservacoesStable(teste.id)}
+              />
+            </div>
+          )}
+
+          {teste.checkTemplate && (teste.checkTemplate.tipoCampo === "numero" || teste.checkTemplate.tipoCampo === "temperatura") && (
+            <div className="space-y-1">
+              <label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                <span>Valor medido</span>
+                {teste.checkTemplate.unidade && (
+                  <span className="text-[10px] text-muted-foreground">({teste.checkTemplate.unidade})</span>
+                )}
+              </label>
+              <input
+                type="text"
+                className="w-full rounded-md border bg-background px-2 py-1 text-xs"
+                placeholder="Informe o valor (salvo em observações)"
+                value={teste.observacoes ?? ""}
+                onChange={(e) => updateLocalObservacoes(teste.id, e.target.value)}
+                onBlur={(e) => handleBlurValorMedidoStable(teste.id, e.target.value)}
+              />
+            </div>
+          )}
+
+          {teste.status === "problema" && (
+            <>
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3 text-red-500" />
+                  <span>Descrição do problema</span>
+                </label>
+                <textarea
+                  className="w-full rounded-md border bg-background px-2 py-1 text-xs"
+                  rows={2}
+                  value={teste.problemaDescricao ?? ""}
+                  onChange={(e) => updateLocalProblema(teste.id, e.target.value)}
+                  onBlur={() => handleBlurProblemaStable(teste.id)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">Resolução do problema</label>
+                <textarea
+                  className="w-full rounded-md border bg-background px-2 py-1 text-xs"
+                  rows={2}
+                  value={teste.resolucaoTexto ?? ""}
+                  onChange={(e) => updateLocalResolucao(teste.id, e.target.value)}
+                  onBlur={() => handleBlurResolucaoStable(teste.id)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">Imagem da resolução (opcional)</label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input type="file" accept="image/*" className="text-[11px]" onChange={(e) => handleUploadImageStable(teste.id, "resolucaoImagem", e.target.files?.[0])} />
+                  {teste.resolucaoImagem && (
+                    <button type="button" className="text-[11px] text-red-600 hover:underline" onClick={() => handleClearImageStable(teste.id, "resolucaoImagem")}>Remover imagem</button>
+                  )}
+                </div>
+                {teste.resolucaoImagem && (
+                  <div className="mt-1">
+                    <button type="button" onClick={() => setPreviewImage({ src: teste.resolucaoImagem as string, alt: "Imagem da resolução" })}>
+                      <img src={teste.resolucaoImagem} alt="Imagem da resolução" className="h-20 rounded-md border object-cover" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">Imagem do problema (opcional)</label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input type="file" accept="image/*" className="text-[11px]" onChange={(e) => handleUploadImageStable(teste.id, "evidenciaImagem", e.target.files?.[0])} />
+                  {teste.evidenciaImagem && (
+                    <button type="button" className="text-[11px] text-red-600 hover:underline" onClick={() => handleClearImageStable(teste.id, "evidenciaImagem")}>Remover imagem</button>
+                  )}
+                </div>
+                {teste.evidenciaImagem && (
+                  <div className="mt-1">
+                    <button type="button" onClick={() => setPreviewImage({ src: teste.evidenciaImagem as string, alt: "Imagem do problema" })}>
+                      <img src={teste.evidenciaImagem} alt="Imagem do problema" className="h-20 rounded-md border object-cover" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {teste.error && <div className="text-[11px] text-red-500">{teste.error}</div>}
+          {teste.saving && <div className="text-[11px] text-muted-foreground">Salvando...</div>}
+        </li>
+      );
+    }),
+    []
+  );
 
   // mapa de configuração das areas (usado também para filtrar por responsável)
   const paradaAreasMap = useMemo(() => {
@@ -551,12 +847,32 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
         return (
         <div
           key={areaNome}
-          className="space-y-2 rounded-xl border bg-muted/40 p-3"
+          className={`space-y-2 rounded-xl border bg-muted/40 p-3 ${
+            !collapsedAreas[areaNome] ? "border-emerald-200 bg-emerald-50/10" : ""
+          }`}
         >
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              {areaNome}
-            </h3>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => toggleAreaCollapsed(areaNome)}
+                aria-label={collapsedAreas[areaNome] ? "Abrir área" : "Fechar área"}
+                className={`rounded-full p-1 flex items-center justify-center transition-colors ${
+                  !collapsedAreas[areaNome]
+                    ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                    : "bg-muted text-muted-foreground hover:bg-slate-100"
+                }`}
+              >
+                {!collapsedAreas[areaNome] ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                {areaNome}
+              </h3>
+            </div>
             {totalChecks > 0 && (
               <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                 <span>
@@ -577,339 +893,17 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
             )}
           </div>
           <div className="space-y-2">
-            {equipamentos.map(({ equipamento, testes }) => (
-              <div
-                key={equipamento.id}
-                className="rounded-lg border bg-background p-3 space-y-2 shadow-[0_1px_0_rgba(15,23,42,0.04)]"
-              >
+            {!collapsedAreas[areaNome] && equipamentos.map(({ equipamento, testes }) => (
+              <div key={equipamento.id} className="rounded-lg border bg-background p-3 space-y-2 shadow-[0_1px_0_rgba(15,23,42,0.04)]">
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <div className="font-medium text-sm">
-                      {equipamento.nome}{" "}
-                      <span className="text-xs text-muted-foreground">
-                        ({equipamento.tag})
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      Tipo: {equipamento.tipo?.nome ?? "—"}
-                    </div>
+                    <div className="font-medium text-sm">{equipamento.nome} {" "}<span className="text-xs text-muted-foreground">({equipamento.tag})</span></div>
+                    <div className="text-[11px] text-muted-foreground">Tipo: {equipamento.tipo?.nome ?? "—"}</div>
                   </div>
                 </div>
                 <ul className="space-y-1">
                   {testes.map((teste) => (
-                    <li
-                      key={teste.id}
-                      className="flex flex-col gap-2 rounded-md border bg-card px-3 py-2 text-xs"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="font-medium">
-                            {teste.checkTemplate?.nome ?? `Check #${teste.id}`}
-                          </div>
-                          {teste.checkTemplate?.descricao && (
-                            <div className="text-[11px] text-muted-foreground">
-                              {teste.checkTemplate.descricao}
-                            </div>
-                          )}
-                          {teste.checkTemplate && (
-                            <div className="text-[11px] text-muted-foreground mt-0.5">
-                              {teste.checkTemplate.tipoCampo === "status" &&
-                                "Tipo: Status (OK / Problema / N/A)"}
-                              {teste.checkTemplate.tipoCampo === "texto" &&
-                                "Tipo: Texto livre"}
-                              {teste.checkTemplate.tipoCampo === "numero" && (
-                                <>
-                                  Tipo: Número
-                                  {teste.checkTemplate.unidade
-                                    ? ` · Unidade: ${teste.checkTemplate.unidade}`
-                                    : ""}
-                                  {teste.checkTemplate.valorMinimo != null
-                                    ? ` · Mín: ${teste.checkTemplate.valorMinimo}`
-                                    : ""}
-                                  {teste.checkTemplate.valorMaximo != null
-                                    ? ` · Máx: ${teste.checkTemplate.valorMaximo}`
-                                    : ""}
-                                </>
-                              )}
-                              {teste.checkTemplate.tipoCampo ===
-                                "temperatura" && (
-                                <>
-                                  Tipo: Temperatura
-                                  {teste.checkTemplate.unidade
-                                    ? ` · Unidade: ${teste.checkTemplate.unidade}`
-                                    : ""}
-                                  {teste.checkTemplate.valorMinimo != null
-                                    ? ` · Mín: ${teste.checkTemplate.valorMinimo}`
-                                    : ""}
-                                  {teste.checkTemplate.valorMaximo != null
-                                    ? ` · Máx: ${teste.checkTemplate.valorMaximo}`
-                                    : ""}
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        {(!teste.checkTemplate || teste.checkTemplate?.tipoCampo === "status") && (
-                          <div className="flex flex-col items-end gap-1">
-                            <div className="flex items-center gap-1">
-                              {(["ok", "problema", "nao_aplica"] as const).map(
-                                (st) => (
-                                  <button
-                                    key={st}
-                                    type="button"
-                                    onClick={() =>
-                                      handleChangeStatus(teste, st)
-                                    }
-                                    className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold border ${
-                                      (() => {
-                                        const resolved = isResolved(teste);
-                                        if (st === "ok") {
-                                          return resolved
-                                            ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                                            : "bg-muted text-muted-foreground border-transparent";
-                                        }
-                                        if (st === "problema") {
-                                          return teste.status === "problema" &&
-                                            !resolved
-                                            ? "bg-red-50 text-red-700 border-red-300"
-                                            : "bg-muted text-muted-foreground border-transparent";
-                                        }
-                                        // nao_aplica
-                                        return teste.status === "nao_aplica"
-                                          ? "bg-slate-50 text-slate-700 border-slate-300"
-                                          : "bg-muted text-muted-foreground border-transparent";
-                                      })()
-                                    }`}
-                                  >
-                                    {st === "ok"
-                                      ? "OK"
-                                      : st === "problema"
-                                      ? "Problema"
-                                      : "N/A"}
-                                  </button>
-                                )
-                              )}
-                            </div>
-                            {teste.status !== "pendente" && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleChangeStatus(teste, "pendente")
-                                }
-                                className="text-[10px] text-muted-foreground hover:underline"
-                              >
-                                Voltar para pendente
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {teste.checkTemplate?.tipoCampo === "texto" && (
-                        <div className="space-y-1">
-                          <label className="text-[11px] text-muted-foreground">
-                            Observações / resultado
-                          </label>
-                          <textarea
-                            className="w-full rounded-md border bg-background px-2 py-1 text-xs"
-                            rows={2}
-                            value={teste.observacoes ?? ""}
-                            onChange={(e) =>
-                              updateLocalTeste(teste.id, {
-                                observacoes: e.target.value,
-                              })
-                            }
-                            onBlur={() => handleBlurObservacoes(teste)}
-                          />
-                        </div>
-                      )}
-
-                      {teste.checkTemplate &&
-                        (teste.checkTemplate.tipoCampo === "numero" ||
-                          teste.checkTemplate.tipoCampo ===
-                            "temperatura") && (
-                          <div className="space-y-1">
-                            <label className="text-[11px] text-muted-foreground flex items-center gap-1">
-                              <span>Valor medido</span>
-                              {teste.checkTemplate.unidade && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  ({teste.checkTemplate.unidade})
-                                </span>
-                              )}
-                            </label>
-                            <input
-                              type="text"
-                              className="w-full rounded-md border bg-background px-2 py-1 text-xs"
-                              placeholder="Informe o valor (salvo em observações)"
-                              value={teste.observacoes ?? ""}
-                              onChange={(e) =>
-                                updateLocalTeste(teste.id, {
-                                  observacoes: e.target.value,
-                                })
-                              }
-                              onBlur={(e) =>
-                                handleBlurValorMedido(
-                                  teste.id,
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </div>
-                        )}
-
-                      {teste.status === "problema" && (
-                          <>
-                            <div className="space-y-1">
-                              <label className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                <AlertTriangle className="h-3 w-3 text-red-500" />
-                                <span>Descrição do problema</span>
-                              </label>
-                              <textarea
-                                className="w-full rounded-md border bg-background px-2 py-1 text-xs"
-                                rows={2}
-                                value={teste.problemaDescricao ?? ""}
-                                onChange={(e) =>
-                                  updateLocalTeste(teste.id, {
-                                    problemaDescricao: e.target.value,
-                                  })
-                                }
-                                onBlur={() => handleBlurProblema(teste)}
-                              />
-                            </div>
-
-                            <div className="space-y-1">
-                              <label className="text-[11px] text-muted-foreground">
-                                Resolução do problema
-                              </label>
-                              <textarea
-                                className="w-full rounded-md border bg-background px-2 py-1 text-xs"
-                                rows={2}
-                                value={teste.resolucaoTexto ?? ""}
-                                onChange={(e) =>
-                                  updateLocalTeste(teste.id, {
-                                    resolucaoTexto: e.target.value,
-                                  })
-                                }
-                                onBlur={() => handleBlurResolucao(teste)}
-                              />
-                            </div>
-
-                            <div className="space-y-1">
-                              <label className="text-[11px] text-muted-foreground">
-                                Imagem da resolução (opcional)
-                              </label>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="text-[11px]"
-                                  onChange={(e) =>
-                                    handleUploadImage(
-                                      teste,
-                                      "resolucaoImagem",
-                                      e.target.files?.[0]
-                                    )
-                                  }
-                                />
-                                {teste.resolucaoImagem && (
-                                  <button
-                                    type="button"
-                                    className="text-[11px] text-red-600 hover:underline"
-                                    onClick={() =>
-                                      handleClearImage(
-                                        teste,
-                                        "resolucaoImagem"
-                                      )
-                                    }
-                                  >
-                                    Remover imagem
-                                  </button>
-                                )}
-                              </div>
-                              {teste.resolucaoImagem && (
-                                <div className="mt-1">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setPreviewImage({
-                                        src: teste.resolucaoImagem as string,
-                                        alt: "Imagem da resolução",
-                                      })
-                                    }
-                                  >
-                                    <img
-                                      src={teste.resolucaoImagem}
-                                      alt="Imagem da resolução"
-                                      className="h-20 rounded-md border object-cover"
-                                    />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="space-y-1">
-                              <label className="text-[11px] text-muted-foreground">
-                                Imagem do problema (opcional)
-                              </label>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="text-[11px]"
-                                  onChange={(e) =>
-                                    handleUploadImage(
-                                      teste,
-                                      "evidenciaImagem",
-                                      e.target.files?.[0]
-                                    )
-                                  }
-                                />
-                                {teste.evidenciaImagem && (
-                                  <button
-                                    type="button"
-                                    className="text-[11px] text-red-600 hover:underline"
-                                    onClick={() =>
-                                      handleClearImage(teste, "evidenciaImagem")
-                                    }
-                                  >
-                                    Remover imagem
-                                  </button>
-                                )}
-                              </div>
-                              {teste.evidenciaImagem && (
-                                <div className="mt-1">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setPreviewImage({
-                                        src: teste.evidenciaImagem as string,
-                                        alt: "Imagem do problema",
-                                      })
-                                    }
-                                  >
-                                    <img
-                                      src={teste.evidenciaImagem}
-                                      alt="Imagem do problema"
-                                      className="h-20 rounded-md border object-cover"
-                                    />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        )}
-
-                      {teste.error && (
-                        <div className="text-[11px] text-red-500">
-                          {teste.error}
-                        </div>
-                      )}
-                      {teste.saving && (
-                        <div className="text-[11px] text-muted-foreground">
-                          Salvando...
-                        </div>
-                      )}
-                    </li>
+                    <TesteCard key={teste.id} teste={teste} />
                   ))}
                 </ul>
               </div>
