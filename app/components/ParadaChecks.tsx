@@ -505,7 +505,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
                             </div>
                           )}
                         </div>
-                        {teste.checkTemplate?.tipoCampo === "status" && (
+                        {(!teste.checkTemplate || teste.checkTemplate?.tipoCampo === "status") && (
                           <div className="flex flex-col items-end gap-1">
                             <div className="flex items-center gap-1">
                               {(["ok", "problema", "nao_aplica"] as const).map(

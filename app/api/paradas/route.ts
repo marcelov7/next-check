@@ -19,6 +19,9 @@ export async function GET(req: Request) {
     where,
     orderBy: { createdAt: 'desc' },
     include: {
+      testes: {
+        select: { status: true }
+      },
       _count: {
         select: { testes: true }
       }

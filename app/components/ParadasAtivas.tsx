@@ -16,6 +16,7 @@ type Parada = {
   macro: string | null;
   dataInicio: string | null;
   duracaoPrevistaHoras: number | null;
+  testes?: { status: string }[];
   _count?: { testes: number };
 };
 
@@ -45,10 +46,14 @@ export default function ParadasAtivas() {
 
   const getIcon = (tipo: string) => {
     switch (tipo) {
-      case 'preventiva': return <ShieldCheck className="h-5 w-5 text-green-500" />;
-      case 'corretiva': return <Wrench className="h-5 w-5 text-orange-500" />;
-      case 'emergencial': return <AlertTriangle className="h-5 w-5 text-red-500" />;
-      default: return <Clock className="h-5 w-5" />;
+      case "preventiva":
+        return <ShieldCheck className="h-5 w-5 text-success" />;
+      case "corretiva":
+        return <Wrench className="h-5 w-5 text-warning" />;
+      case "emergencial":
+        return <AlertTriangle className="h-5 w-5 text-danger" />;
+      default:
+        return <Clock className="h-5 w-5 text-primary" />;
     }
   };
 
@@ -57,6 +62,22 @@ export default function ParadasAtivas() {
     return new Date(dateStr).toLocaleString('pt-BR', { 
       day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' 
     });
+  };
+
+  const getStatusLabel = (status: Parada["status"]) => {
+    if (status === "em_andamento") return "Em andamento";
+    if (status === "concluida") return "Concluída";
+    return "Cancelada";
+  };
+
+  const getStatusClasses = (status: Parada["status"]) => {
+    if (status === "em_andamento") {
+      return "bg-warning/15 text-warning ring-warning/40";
+    }
+    if (status === "concluida") {
+      return "bg-success/15 text-success ring-success/40";
+    }
+    return "bg-danger/15 text-danger ring-danger/40";
   };
 
   return (
@@ -78,25 +99,46 @@ export default function ParadasAtivas() {
           <Button variant="link" onClick={() => router.push('/paradas/create')}>Criar a primeira</Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {paradas.map((parada) => (
-            <div key={parada.id} className="group relative flex flex-col rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md">
-              <div className="flex items-start justify-between mb-4">
+            <Link
+              key={parada.id}
+              href={`/paradas/${parada.id}`}
+              className="group relative flex flex-col rounded-xl border bg-surface/80 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md"
+            >
+              <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`rounded-full p-2 bg-muted/50`}>
+                  <div className="rounded-full bg-secondary/70 p-2 text-primary-foreground">
                     {getIcon(parada.tipo)}
                   </div>
                   <div>
-                    <h3 className="font-semibold leading-none">{parada.nome}</h3>
-                    <span className="text-xs text-muted-foreground capitalize">{parada.tipo}</span>
+                    <h3 className="font-semibold leading-none text-secondary">
+                      {parada.nome}
+                    </h3>
+                    <span className="mt-1 inline-flex rounded-full bg-secondary/60 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-secondary-foreground">
+                      {parada.tipo}
+                    </span>
                   </div>
                 </div>
-                <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                  Ativa
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${getStatusClasses(
+                    parada.status
+                  )}`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      parada.status === "em_andamento"
+                        ? "bg-warning"
+                        : parada.status === "concluida"
+                        ? "bg-success"
+                        : "bg-danger"
+                    }`}
+                  />
+                  {getStatusLabel(parada.status)}
                 </span>
               </div>
 
-              <div className="space-y-2 text-sm text-muted-foreground flex-1">
+              <div className="flex-1 space-y-2 text-sm text-muted-foreground">
                 {parada.macro && (
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-3.5 w-3.5" />
@@ -121,15 +163,28 @@ export default function ParadasAtivas() {
                 )}
               </div>
 
-              <div className="mt-5 pt-4 border-t flex items-center justify-between">
-                <div className="text-xs text-muted-foreground">
-                  {parada._count?.testes || 0} testes realizados
+              <div className="mt-5 flex items-center justify-between border-t pt-4 text-xs">
+                <div className="flex flex-col gap-1 w-full mr-4">
+                   <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{parada._count?.testes || 0} testes</span>
+                      <span>
+                        {parada._count?.testes 
+                          ? Math.round(((parada.testes?.filter(t => t.status === 'ok').length || 0) / parada._count.testes) * 100) 
+                          : 0}%
+                      </span>
+                   </div>
+                   <div className="h-1.5 w-full rounded-full bg-muted">
+                      <div 
+                        className="h-full rounded-full bg-emerald-500" 
+                        style={{ width: `${parada._count?.testes ? Math.round(((parada.testes?.filter(t => t.status === 'ok').length || 0) / parada._count.testes) * 100) : 0}%` }} 
+                      />
+                   </div>
                 </div>
-                <Link href={`/paradas/${parada.id}`} className="text-sm font-medium text-primary hover:underline">
-                  Ver detalhes &rarr;
-                </Link>
+                <span className="text-[11px] font-medium text-primary group-hover:underline whitespace-nowrap">
+                  Ver detalhes →
+                </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
