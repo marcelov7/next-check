@@ -82,6 +82,19 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     alt: string;
   } | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // show scroll-to-top button when user scrolls down
+  useMemo(() => {
+    if (typeof window === "undefined") return;
+    const onScroll = () => {
+      setShowScrollTop(window.scrollY > 200);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    // initialize
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll as any);
+  }, []);
 
   const updateLocalTeste = (id: number, patch: Partial<LocalTesteState>) => {
     setLocalTestes((prev) =>
@@ -940,13 +953,12 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       );
       })}
 
-      <div className="flex items-center justify-between pt-2 border-t mt-2 text-xs">
-        <span className="text-muted-foreground">
+      <div className="flex flex-col md:flex-row md:items-center items-start justify-between pt-2 border-t mt-2 text-xs gap-2">
+        <span className="text-muted-foreground text-sm">
           Mostrando equipamentos {pagination.start + 1}-
-          {pagination.start + pagination.countVisible} de{" "}
-          {pagination.totalEquipamentos}
+          {pagination.start + pagination.countVisible} de {pagination.totalEquipamentos}
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
           <label className="text-[11px] text-muted-foreground">Mostrar</label>
           <select
             className="rounded-md border bg-background px-2 py-1 text-xs"
@@ -986,6 +998,22 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
           )}
         </div>
       </div>
+
+      {/* Scroll-to-top button */}
+      <button
+        type="button"
+        onClick={() => {
+          try {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } catch (e) {
+            window.scrollTo(0, 0);
+          }
+        }}
+        aria-label="Subir ao topo"
+        className={`${showScrollTop ? "opacity-100" : "opacity-0 pointer-events-none"} transition-opacity fixed right-4 bottom-20 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white shadow-lg`}
+      >
+        ↑
+      </button>
 
       <Dialog
         open={!!previewImage}
