@@ -61,7 +61,7 @@ type LocalTesteState = Teste & {
   error?: string | null;
 };
 
-const PAGE_SIZE = 5;
+const DEFAULT_PAGE_SIZE = 5;
 
 const isResolved = (teste: LocalTesteState) =>
   teste.status === "ok" ||
@@ -73,6 +73,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     () => testes as LocalTesteState[]
   );
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [previewImage, setPreviewImage] = useState<{
     src: string;
     alt: string;
@@ -317,13 +318,10 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     });
 
     const totalEquipamentos = rows.length;
-    const totalPages = Math.max(
-      1,
-      Math.ceil(totalEquipamentos / PAGE_SIZE)
-    );
+    const totalPages = Math.max(1, Math.ceil(totalEquipamentos / pageSize));
     const currentPage = Math.min(page, totalPages);
-    const start = (currentPage - 1) * PAGE_SIZE;
-    const visibleRows = rows.slice(start, start + PAGE_SIZE);
+    const start = (currentPage - 1) * pageSize;
+    const visibleRows = rows.slice(start, start + pageSize);
 
     const areaGroup: Record<
       string,
@@ -361,7 +359,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       countVisible: visibleRows.length,
       statsByArea,
     };
-  }, [localTestes, page]);
+  }, [localTestes, page, pageSize]);
 
     const paradaAreasMap = useMemo(() => {
       const map: Record<number, any> = {};
@@ -796,7 +794,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       );
       })}
 
-      {pagination.totalEquipamentos > PAGE_SIZE && (
+      {pagination.totalEquipamentos > pageSize && (
         <div className="flex items-center justify-between pt-2 border-t mt-2 text-xs">
           <span className="text-muted-foreground">
             Mostrando equipamentos {pagination.start + 1}-
@@ -804,6 +802,20 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
             {pagination.totalEquipamentos}
           </span>
           <div className="flex items-center gap-2">
+            <label className="text-[11px] text-muted-foreground">Mostrar</label>
+            <select
+              className="rounded-md border bg-background px-2 py-1 text-xs"
+              value={pageSize}
+              onChange={(e) => {
+                const v = Number(e.target.value) || DEFAULT_PAGE_SIZE;
+                setPageSize(v);
+                setPage(1);
+              }}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+            </select>
             <Button
               variant="outline"
               size="sm"
