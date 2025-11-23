@@ -81,7 +81,6 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     src: string;
     alt: string;
   } | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // show scroll-to-top button when user scrolls down
@@ -423,27 +422,20 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [localTestes]);
 
-  // debug: log pagination values to console for troubleshooting
+  // log pagination in development only (no visible debug panel)
   useMemo(() => {
-    // only log in development or when dbg param is set in URL
-    try {
-      if (typeof window !== "undefined") {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("dbg") === "1") setShowDebug(true);
-      }
-    } catch (e) {
-      // ignore
+    if (process?.env?.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.debug && console.debug("[ParadaChecks] pagination:", {
+        totalEquipamentos: pagination?.totalEquipamentos,
+        totalPages: pagination?.totalPages,
+        currentPage: pagination?.currentPage,
+        start: pagination?.start,
+        countVisible: pagination?.countVisible,
+        pageSize,
+        localTestesLength: localTestes.length,
+      });
     }
-    // eslint-disable-next-line no-console
-    console.debug && console.debug("[ParadaChecks] pagination:", {
-      totalEquipamentos: pagination?.totalEquipamentos,
-      totalPages: pagination?.totalPages,
-      currentPage: pagination?.currentPage,
-      start: pagination?.start,
-      countVisible: pagination?.countVisible,
-      pageSize,
-      localTestesLength: localTestes.length,
-    });
   }, [pagination, pageSize, localTestes.length]);
 
     
@@ -524,27 +516,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     </div>
   );
 
-  // Debug panel: visible when ?dbg=1 is present in URL
-  const DebugPanel = () => {
-    if (!showDebug) return null;
-    return (
-      <div className="fixed right-4 bottom-4 z-50 w-[360px] max-h-[50vh] overflow-auto rounded border bg-white/95 p-3 text-xs shadow-lg">
-        <div className="flex items-center justify-between mb-2">
-          <strong>ParadaChecks Debug</strong>
-          <button className="text-[11px] text-muted-foreground" onClick={() => setShowDebug(false)}>Fechar</button>
-        </div>
-        <pre className="whitespace-pre-wrap break-words text-[11px] text-slate-700">{JSON.stringify({
-          totalEquipamentos: pagination.totalEquipamentos,
-          totalPages: pagination.totalPages,
-          currentPage: pagination.currentPage,
-          start: pagination.start,
-          countVisible: pagination.countVisible,
-          pageSize,
-          localTestesLength: localTestes.length,
-        }, null, 2)}</pre>
-      </div>
-    );
-  };
+  // debug panel removed; use dev console logs only
 
   return (
     <div className="space-y-4">
