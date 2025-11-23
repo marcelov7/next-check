@@ -794,59 +794,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       );
       })}
 
-      {pagination.totalEquipamentos > pageSize && (
-        <div className="flex items-center justify-between pt-2 border-t mt-2 text-xs">
-          <span className="text-muted-foreground">
-            Mostrando equipamentos {pagination.start + 1}-
-            {pagination.start + pagination.countVisible} de{" "}
-            {pagination.totalEquipamentos}
-          </span>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <label className="text-[11px] text-muted-foreground">Mostrar</label>
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  const next = Number(e.target.value) || DEFAULT_PAGE_SIZE;
-                  setPageSize(next);
-                  setPage(1);
-                }}
-                className="rounded-md border bg-background px-2 py-1 text-xs"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pagination.currentPage === 1}
-              onClick={() =>
-                setPage((p) => Math.max(1, p - 1))
-              }
-            >
-              Anterior
-            </Button>
-            <span className="text-muted-foreground">
-              Página {pagination.currentPage} de {pagination.totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pagination.currentPage === pagination.totalPages}
-              onClick={() =>
-                setPage((p) =>
-                  Math.min(pagination.totalPages, p + 1)
-                )
-              }
-            >
-              Próxima
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Paginação removida temporariamente para corrigir erro de parsing. */}
 
       <Dialog
         open={!!previewImage}
