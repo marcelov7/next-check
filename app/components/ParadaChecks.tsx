@@ -61,7 +61,7 @@ type LocalTesteState = Teste & {
   error?: string | null;
 };
 
-const PAGE_SIZE = 5;
+const DEFAULT_PAGE_SIZE = 5;
 
 const isResolved = (teste: LocalTesteState) =>
   teste.status === "ok" ||
@@ -69,10 +69,11 @@ const isResolved = (teste: LocalTesteState) =>
     (!!teste.resolucaoTexto || !!teste.resolucaoImagem));
 
 export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props) {
-  const [localTestes, setLocalTestes] = useState<LocalTesteState[]>(
-    () => testes as LocalTesteState[]
+  const [localTestes, setLocalTestes] = useState<LocalTesteState[]>(() =>
+    testes as LocalTesteState
   );
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [previewImage, setPreviewImage] = useState<{
     src: string;
     alt: string;
@@ -317,13 +318,10 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
     });
 
     const totalEquipamentos = rows.length;
-    const totalPages = Math.max(
-      1,
-      Math.ceil(totalEquipamentos / PAGE_SIZE)
-    );
+    const totalPages = Math.max(1, Math.ceil(totalEquipamentos / pageSize));
     const currentPage = Math.min(page, totalPages);
-    const start = (currentPage - 1) * PAGE_SIZE;
-    const visibleRows = rows.slice(start, start + PAGE_SIZE);
+    const start = (currentPage - 1) * pageSize;
+    const visibleRows = rows.slice(start, start + pageSize);
 
     const areaGroup: Record<
       string,
@@ -361,7 +359,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       countVisible: visibleRows.length,
       statsByArea,
     };
-  }, [localTestes, page]);
+  }, [localTestes, page, pageSize]);
 
     const paradaAreasMap = useMemo(() => {
       const map: Record<number, any> = {};
@@ -796,14 +794,32 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       );
       })}
 
-      {pagination.totalEquipamentos > PAGE_SIZE && (
+      {pagination.totalEquipamentos > pageSize && (
         <div className="flex items-center justify-between pt-2 border-t mt-2 text-xs">
           <span className="text-muted-foreground">
             Mostrando equipamentos {pagination.start + 1}-
             {pagination.start + pagination.countVisible} de{" "}
             {pagination.totalEquipamentos}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] text-muted-foreground">Mostrar</label>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  const next = Number(e.target.value) || DEFAULT_PAGE_SIZE;
+                  setPageSize(next);
+                  setPage(1);
+                }}
+                className="rounded-md border bg-background px-2 py-1 text-xs"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
