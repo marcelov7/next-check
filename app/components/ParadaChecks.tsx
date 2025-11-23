@@ -466,6 +466,23 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
               </div>
 
               <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">Imagem do problema (opcional)</label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input type="file" accept="image/*" className="text-[11px]" onChange={(e) => handleUploadImageStable(teste.id, "evidenciaImagem", e.target.files?.[0])} />
+                  {teste.evidenciaImagem && (
+                    <button type="button" className="text-[11px] text-red-600 hover:underline" onClick={() => handleClearImageStable(teste.id, "evidenciaImagem")}>Remover imagem</button>
+                  )}
+                </div>
+                {teste.evidenciaImagem && (
+                  <div className="mt-1">
+                    <button type="button" onClick={() => setPreviewImage({ src: teste.evidenciaImagem as string, alt: "Imagem do problema" })}>
+                      <img src={teste.evidenciaImagem} alt="Imagem do problema" className="h-20 rounded-md border object-cover" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1">
                 <label className="text-[11px] text-muted-foreground">Resolução do problema</label>
                 <textarea
                   className="w-full rounded-md border bg-background px-2 py-1 text-xs"
@@ -488,23 +505,6 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
                   <div className="mt-1">
                     <button type="button" onClick={() => setPreviewImage({ src: teste.resolucaoImagem as string, alt: "Imagem da resolução" })}>
                       <img src={teste.resolucaoImagem} alt="Imagem da resolução" className="h-20 rounded-md border object-cover" />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] text-muted-foreground">Imagem do problema (opcional)</label>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <input type="file" accept="image/*" className="text-[11px]" onChange={(e) => handleUploadImageStable(teste.id, "evidenciaImagem", e.target.files?.[0])} />
-                  {teste.evidenciaImagem && (
-                    <button type="button" className="text-[11px] text-red-600 hover:underline" onClick={() => handleClearImageStable(teste.id, "evidenciaImagem")}>Remover imagem</button>
-                  )}
-                </div>
-                {teste.evidenciaImagem && (
-                  <div className="mt-1">
-                    <button type="button" onClick={() => setPreviewImage({ src: teste.evidenciaImagem as string, alt: "Imagem do problema" })}>
-                      <img src={teste.evidenciaImagem} alt="Imagem do problema" className="h-20 rounded-md border object-cover" />
                     </button>
                   </div>
                 )}
@@ -934,13 +934,12 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
       );
       })}
 
-      <div className="flex items-center justify-between pt-2 border-t mt-2 text-xs">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-2 border-t mt-2 text-xs gap-2">
         <span className="text-muted-foreground">
           Mostrando equipamentos {pagination.start + 1}-
-          {pagination.start + pagination.countVisible} de{" "}
-          {pagination.totalEquipamentos}
+          {pagination.start + pagination.countVisible} de {pagination.totalEquipamentos}
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <label className="text-[11px] text-muted-foreground">Mostrar</label>
           <select
             className="rounded-md border bg-background px-2 py-1 text-xs"
@@ -956,7 +955,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
             <option value={20}>20</option>
           </select>
           {pagination.totalPages > 1 && (
-            <>
+            <div className="flex items-center gap-2 ml-auto sm:ml-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -976,7 +975,7 @@ export default function ParadaChecks({ testes, paradaAreas, areasConfig }: Props
               >
                 Próxima
               </Button>
-            </>
+            </div>
           )}
         </div>
       </div>
